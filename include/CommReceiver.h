@@ -5,6 +5,8 @@
 
 #include <cstdint>
 #include <atomic>
+#include <chrono>
+#include <ostream>
 
 #include <boost/signals2/signal.hpp>
 
@@ -32,7 +34,7 @@ class CommReceiver : public CommBase{
     CommReceiver(const CommReceiver&) = delete;
     CommReceiver& operator=(const CommReceiver&) = delete;
 
-    CommReceiver(unsigned short port, unsigned long timeout,
+    CommReceiver(unsigned short port, std::chrono::milliseconds timeout,
                    uint8_t numLeds, uint8_t maxBrightness, int32_t maxSpeed, 
                    int32_t maxAngle) throw(IOError);
     Move getMoveData() const throw(){return mMove[mCurBuf.load()];}
@@ -45,3 +47,5 @@ class CommReceiver : public CommBase{
      */
     void addEventHandler(EventHandlerType handler){eventCallback.connect(handler);}
 };
+
+std::ostream& operator<<(std::ostream& out, const CommReceiver& recv);

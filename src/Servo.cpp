@@ -44,3 +44,8 @@ Servo::~Servo(){
 	angle(0);
   bcm2835_close();
 }
+
+
+std::ostream& operator<<(std::ostream& out, const Servo& s){
+  return out << "Servo(GPIO 18): y = " << s.config().m << " * x + " << s.config().n << " < " << s.config().max;
+}

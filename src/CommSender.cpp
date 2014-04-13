@@ -3,8 +3,9 @@
 #include <boost/asio.hpp>
 
 using boost::asio::const_buffer;
+using std::chrono::milliseconds;
 
-CommSender::CommSender(std::string& host, unsigned short port, unsigned long timeout) throw(IOError):
+CommSender::CommSender(const std::string& host, unsigned short port, milliseconds timeout) throw(IOError):
   CommBase(host, port, timeout),
   mLeds(mInit.numLeds, CommData::LedData()){
   startTimer();
@@ -40,4 +41,8 @@ CommBase::TransmitBuffers CommSender::createTransmitBuffers() const throw(){
   buffers.push_back(const_buffer(mLeds.data(), mLeds.size()*sizeof(CommData::LedData)));
 
   return buffers;
+}
+
+std::ostream& operator<<(std::ostream& out, const CommSender& sender){
+  return out << "localhost -> " << static_cast<const CommBase&>(sender);
 }

@@ -34,7 +34,7 @@ class CommBase{
     boost::asio::steady_timer mTimer;
     boost::signals2::signal<void(CommError e)> errorCallback;
     std::thread mIOThread;
-    std::chrono::milliseconds timeout;
+    std::chrono::milliseconds mTimeout;
 
     void runIOService() throw();
   protected:
@@ -53,10 +53,10 @@ class CommBase{
     CommBase& operator=(const CommBase&) = delete;
 
     /* \brief Sender constructor*/
-    CommBase(const std::string& host, unsigned short port, unsigned long timeout) throw(IOError);
+    CommBase(const std::string& host, unsigned short port, std::chrono::milliseconds timeout) throw(IOError);
 
     /* \brief Receiver constructor*/
-    CommBase(unsigned short port, unsigned long timeout) throw(IOError);
+    CommBase(unsigned short port, std::chrono::milliseconds timeout) throw(IOError);
 
     /* \brief add an error handler
      * \param handler the error handler
@@ -64,4 +64,9 @@ class CommBase{
      * In case of exceptions during async operations this handler will be called
      */
     void addErrorHandler(ErrorHandlerType handler){errorCallback.connect(handler);}
+    std::chrono::milliseconds timeout() const;
+    std::string host() const;
+    uint16_t port() const;
 };
+
+std::ostream& operator<<(std::ostream& out, const CommBase& data);

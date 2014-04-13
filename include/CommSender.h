@@ -5,6 +5,8 @@
 #include <CommBase.h>
 
 #include <mutex>
+#include <ostream>
+#include <chrono>
 
 class CommSender : public CommBase{
   private:
@@ -25,10 +27,12 @@ class CommSender : public CommBase{
     CommSender(const CommSender&) = delete;
     CommSender& operator=(const CommSender&) = delete;
 
-    CommSender(std::string& host, unsigned short port, unsigned long timeout) throw(IOError);
+    CommSender(const std::string& host, unsigned short port, std::chrono::milliseconds timeout) throw(IOError);
     const Move& getMoveData() const throw(){return mMove;}
     const Leds& getLedData()  const throw(){return mLeds;}
     const Parameters& getParameters() const throw(){return mInit;}
     void setMoveData(Move move) throw();
     void setLedsData(Leds leds)  throw();
 };
+
+std::ostream& operator<<(std::ostream& out, const CommSender& sender);

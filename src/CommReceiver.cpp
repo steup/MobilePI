@@ -7,8 +7,9 @@
 
 using boost::asio::mutable_buffer;
 using std::vector;
+using std::chrono::milliseconds;
 
-CommReceiver::CommReceiver(unsigned short port, unsigned long timeout, uint8_t numLeds, uint8_t maxBrightness, int32_t maxSpeed, int32_t maxAngle) 
+CommReceiver::CommReceiver(unsigned short port, milliseconds timeout, uint8_t numLeds, uint8_t maxBrightness, int32_t maxSpeed, int32_t maxAngle) 
   throw(IOError)
   : CommBase(port, timeout), mCurBuf(0),
     mLeds({std::vector<CommData::LedData>(mInit.numLeds, CommData::LedData()),
@@ -45,4 +46,8 @@ void CommReceiver::handleEvent(const CommBase::ErrorCode& e, size_t bytes) throw
 
 void CommReceiver::handleTimeout(const CommBase::ErrorCode& e) throw(IOError, CommError){
   throw CommError(CommError::timeout);
+}
+
+std::ostream& operator<<(std::ostream& out, const CommReceiver& recv){
+  return out << "localhost <- " << static_cast<const CommBase&>(recv);
 }

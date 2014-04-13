@@ -64,3 +64,7 @@ void Joystick::handleJoystick(){
 std::string Joystick::name() const{
   return SDL_JoystickName(mJoyNum);
 }
+
+std::ostream& operator<<(std::ostream& out, const Joystick& j){
+  return out << "Joystick: " << j.name();
+}

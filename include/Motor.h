@@ -2,6 +2,7 @@
 #include <exception>
 #include <thread>
 #include <atomic>
+#include <ostream>
 
 class MotorException : public std::exception{
   public:
@@ -21,10 +22,9 @@ class MotorException : public std::exception{
 class Motor{
   public:
     typedef int SpeedType;
-    struct MotorConfig{
-      MotorConfig(){}
+    struct Config{
       unsigned int  n         = 100;
-      unsigned int  m         = 100;
+      int  m                  = 100;
       SpeedType     max       = 100;
       SpeedType     min       = -50;
       unsigned int  frequency =  75;
@@ -34,15 +34,18 @@ class Motor{
 
   private:
     std::atomic<SpeedType> mSpeed;
-    const MotorConfig      mConfig;
+    const Config      mConfig;
     std::thread            mThread;
     bool                   mStop;
     static void motorTask(Motor& motor);
   public:
-    Motor(const MotorConfig& config=MotorConfig());
+    Motor(const Config& config);
     ~Motor();
     void speed(SpeedType speed);
     SpeedType speed() const;
-    const MotorConfig& config() const {return mConfig;}
+    const Config& config() const {return mConfig;}
     bool stopped() const {return mStop;}
 };
+
+std::ostream& operator<<(std::ostream& out, const Motor& s);
+std::ostream& operator<<(std::ostream& out, const Motor::Config& c);

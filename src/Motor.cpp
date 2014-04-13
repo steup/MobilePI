@@ -75,7 +75,7 @@ const char* MotorException::what() const throw()
   return msg.c_str();
 }
 
-Motor::Motor(const MotorConfig& config) : 
+Motor::Motor(const Motor::Config& config) : 
   mConfig(config), mThread(&Motor::motorTask, ref(*this)), mStop(false){
     stringstream s;
     s << "GPIO " << mConfig.pin << " PWM";
@@ -102,4 +102,15 @@ Motor::SpeedType Motor::speed() const{
 Motor::~Motor(){
   mStop=true;
   mThread.join();
+}
+
+std::ostream& operator<<(std::ostream& out, const Motor& m){
+  if(!m.stopped())
+    return out << "Motor: " << m.speed();
+  else
+    return out << "Motor: stopped";
+}
+
+std::ostream& operator<<(std::ostream& out, const Motor& m){
+  return out << "Motor(GPIO " << m.config().pin << "): y = " << m.config().m << " * x / 1000 + " << m.config().n << " - " << m.config().min << " < y < " << m.config().max << " - " << "PWM: " << m.config.frequency << "Hz, " << m.config.bits;
 }

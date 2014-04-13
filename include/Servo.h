@@ -1,6 +1,8 @@
 #pragma once
 #include <exception>
 
+#include <ostream>
+
 class ServoException : public std::exception{
   public:
     enum Cause{
@@ -22,10 +24,10 @@ class Servo{
   private:
     int mAngle;
     const unsigned int mOffset;
-    const unsigned int mFactor;
+    const int mFactor;
     const unsigned int mMaxAngle;
   public:
-    Servo(unsigned int maxAngle=250, unsigned int offset=1065, unsigned int factor=1);
+    Servo(unsigned int maxAngle=250, unsigned int offset=1065, int factor=1);
     ~Servo();
     void angle(int angle);
     int angle() const{return mAngle;}
@@ -33,3 +35,5 @@ class Servo{
     unsigned int factor() const{return mFactor;}
     unsigned int maxAngle() const{return mMaxAngle;}
 };
+
+std::ostream& operator<<(std::ostream& out, const Servo& s);

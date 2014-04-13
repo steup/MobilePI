@@ -1,5 +1,6 @@
 #pragma once
 #include <cstdint>
+#include <ostream>
 
 namespace CommData{
   struct InitData{
@@ -20,4 +21,19 @@ namespace CommData{
     uint8_t red, green, blue;
     bool operator==(const LedData& a){return red==a.red && green==a.green && blue==a.blue;}
   } __attribute__((packed));
+}
+
+inline std::ostream& operator<<(std::ostream& out, const CommData::InitData& data){
+  return out << "(max. Speed, max. Angle, max. Brightness, #LEDs) = (" << data.maxSpeed << ", " << data.maxAngle << ", " << (uint16_t)data.maxBrightness << ", " << (uint16_t)data.numLeds << ")";
+}
+
+inline std::ostream& operator<<(std::ostream& out, const CommData::MoveData& data){
+  return out << "(speed, angle) = (" << data.speed << ", " << data.angle << ")";
+}
+
+inline std::ostream& operator<<(std::ostream& out, const CommData::LedData& data){
+  auto flags=out.flags();
+  out << "RGB = 0x" << std::hex << data.red << data.green << data.blue;
+  out.flags(flags);
+  return out;
 }

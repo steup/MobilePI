@@ -5,14 +5,18 @@
 #include <mutex>
 #include <thread>
 #include <atomic>
+#include <ostream>
 
 #include <boost/signals2/signal.hpp>
 
 #include <SDL/SDL.h>
+#include <limits>
 
 class Joystick{
   public:
     struct State{
+      static const int16_t axisMin=std::numeric_limits<int16_t>::min();
+      static const int16_t axisMax=std::numeric_limits<int16_t>::max();
       std::vector<int16_t> axes;
       std::vector<bool> buttons;
     };
@@ -41,3 +45,5 @@ class Joystick{
     void addEventHandler(EventHandlerType handler);
     std::string name() const;
 };
+
+std::ostream& operator<<(std::ostream& out, const Joystick& j);

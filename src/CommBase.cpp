@@ -10,21 +10,22 @@ using boost::asio::ip::udp;
 using std::stringstream;
 using std::cerr;
 using std::endl;
+using std::chrono::milliseconds;
 
-CommBase::CommBase(unsigned short port, unsigned long timeout)
+CommBase::CommBase(unsigned short port, milliseconds timeout)
   throw(IOError)
   : mSocket(mIos, udp::endpoint(udp::v4(), port)),
     mTimer(mIos),
     mIOThread([this](){runIOService();}),
-    timeout(timeout){
+    mTimeout(timeout){
 }
 
-CommBase::CommBase(const std::string& host, unsigned short port, unsigned long timeout)
+CommBase::CommBase(const std::string& host, unsigned short port, milliseconds timeout)
   throw(IOError)
   : mSocket(mIos, udp::endpoint(udp::v4(), 0)),
     mTimer(mIos),
     mIOThread([this](){runIOService();}),
-    timeout(timeout){
+    mTimeout(timeout){
   udp::resolver r(mIos);
   stringstream ss;
   ss << port;
@@ -52,7 +53,7 @@ void CommBase::startTimer() throw(IOError){
       handleTimeout(e);
     }
   };
-  mTimer.expires_from_now(timeout);
+  mTimer.expires_from_now(mTimeout);
   mTimer.async_wait(func);
 }
 
@@ -70,4 +71,20 @@ void CommBase::runIOService() throw()
       errorCallback(e);
     }
   }
+}
+
+milliseconds CommBase::timeout() const{
+  return mTimeout;
+}
+
+std::string CommBase::host() const{
+  return mEndpoint.address().to_string();
+}
+
+uint16_t CommBase::port() const{
+  return mEndpoint.port();
+}
+
+std::ostream& operator<<(std::ostream& out, const CommBase& data){
+  return out << data.host() << ":" << data.port() << " - " << data.timeout().count() << "ms";
 }
