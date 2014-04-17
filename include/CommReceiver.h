@@ -30,6 +30,7 @@ class CommReceiver : public CommBase{
   public:
     using Leds = std::vector<CommData::LedData>;
     using Move = CommData::MoveData;
+    using Parameters = CommData::InitData;
 
     CommReceiver(const CommReceiver&) = delete;
     CommReceiver& operator=(const CommReceiver&) = delete;
@@ -46,6 +47,7 @@ class CommReceiver : public CommBase{
      * This handler will be called whenever an event happened
      */
     void addEventHandler(EventHandlerType handler){eventCallback.connect(handler);}
+    const Parameters& getParameters() const throw(){return mInit;}
 };
 
 std::ostream& operator<<(std::ostream& out, const CommReceiver& recv);

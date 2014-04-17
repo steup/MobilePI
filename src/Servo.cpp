@@ -21,23 +21,23 @@ const char* ServoException::what() const throw()
   return msg.c_str();
 }
 
-Servo::Servo(unsigned int maxAngle, unsigned int offset, unsigned int factor) : mOffset(offset), mFactor(factor), mMaxAngle(maxAngle){
+Servo::Servo(const Config& config) : mConfig(config){
 	if(!bcm2835_init())
     throw ServoException(ServoException::initError);
 	bcm2835_gpio_fsel(18, BCM2835_GPIO_FSEL_ALT5);
 	//bcm2835_pwm_set_clock(BCM2835_PWM_CLOCK_DIVIDER_256);
-	bcm2835_pwm_set_clock(27);
+	bcm2835_pwm_set_clock(mConfig.divider);
 	bcm2835_pwm_set_mode(0, 1, 1);
-	bcm2835_pwm_set_range(0, 10000);
+	bcm2835_pwm_set_range(0, 1<<mConfig.bits);
   angle(0);
 }
 
 void Servo::angle(int angle)
 {
-  if(abs(angle)>mMaxAngle)
+  if(angle<mConfig.min || angle>mConfig.max)
     throw ServoException(ServoException::invalidAngle);
   mAngle=angle;
-	bcm2835_pwm_set_data(0, mAngle*mFactor+mOffset);
+	bcm2835_pwm_set_data(0, mAngle*mConfig.m/1000 + mConfig.n);
 }
 
 Servo::~Servo(){
@@ -47,5 +47,11 @@ Servo::~Servo(){
 
 
 std::ostream& operator<<(std::ostream& out, const Servo& s){
-  return out << "Servo(GPIO 18): y = " << s.config().m << " * x + " << s.config().n << " < " << s.config().max;
+  return out << "Servo(GPIO 18): theta = " << s.angle();
+}
+
+std::ostream& operator<<(std::ostream& out, const Servo::Config& cfg){
+  return out << "Servo(GPIO 18): theta= " << cfg.m << " * x / 1000 + " << cfg.n << ": " 
+             << cfg.min << "deg <= theta <= " << cfg.max << "deg - "
+             << "PWM: F_CPU / " << cfg.divider << "Hz, " << (uint16_t)cfg.bits << "bit";
 }

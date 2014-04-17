@@ -111,6 +111,6 @@ std::ostream& operator<<(std::ostream& out, const Motor& m){
     return out << "Motor: stopped";
 }
 
-std::ostream& operator<<(std::ostream& out, const Motor& m){
-  return out << "Motor(GPIO " << m.config().pin << "): y = " << m.config().m << " * x / 1000 + " << m.config().n << " - " << m.config().min << " < y < " << m.config().max << " - " << "PWM: " << m.config.frequency << "Hz, " << m.config.bits;
+std::ostream& operator<<(std::ostream& out, const Motor::Config& cfg){
+  return out << "Motor(GPIO " << (uint16_t)cfg.pin << "): v = " << cfg.m << " * x / 1000 + " << cfg.n << " - " << cfg.min << "m/s < v < " << cfg.max << "m/s - " << "PWM: " << cfg.frequency << "Hz, " << (uint16_t)cfg.bits << "bit";
 }

@@ -21,19 +21,26 @@ class ServoException : public std::exception{
 };
 
 class Servo{
+  public:
+    struct Config{
+      int min=-100;
+      int max=100;
+      unsigned int n=100;
+      int m=1;
+      unsigned int divider = 27;
+      uint8_t bits = 10;
+    };
+
   private:
     int mAngle;
-    const unsigned int mOffset;
-    const int mFactor;
-    const unsigned int mMaxAngle;
+    const Config mConfig;
   public:
-    Servo(unsigned int maxAngle=250, unsigned int offset=1065, int factor=1);
+    Servo(const Config& config);
     ~Servo();
     void angle(int angle);
     int angle() const{return mAngle;}
-    unsigned int offset() const{return mOffset;}
-    unsigned int factor() const{return mFactor;}
-    unsigned int maxAngle() const{return mMaxAngle;}
+    const Config& config() const{return mConfig;}
 };
 
 std::ostream& operator<<(std::ostream& out, const Servo& s);
+std::ostream& operator<<(std::ostream& out, const Servo::Config& cfg);
