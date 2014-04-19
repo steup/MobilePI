@@ -51,8 +51,8 @@ int main(int argc, char** argv){
     ("Servo.n",            value<unsigned int>(),   "Linear offset of servo calibration")
     ("Servo.max",          value<int>(),            "Maximum angle value of servo")
     ("Servo.min",          value<int>(),            "Minimum angle value of servo")
-    ("Servo.divider",      value<unsigned int>(),   "CPU frequency divider to create pwm frequency")
-    ("Servo.bits",         value<uint16_t>(),        "Number of bits in pwm signal")
+    ("Servo.frequency",    value<unsigned int>(),   "PWM frequency of servo signal")
+    ("Servo.bits",         value<uint16_t>(),       "Number of bits in pwm signal")
 
     ("help",                                        "print this help");
   variables_map vm;
@@ -81,7 +81,7 @@ int main(int argc, char** argv){
   servoCfg.max=vm["Servo.max"].as<int>();
   servoCfg.m=vm["Servo.m"].as<int>();
   servoCfg.n=vm["Servo.n"].as<unsigned int>();
-  servoCfg.divider=vm["Servo.divider"].as<unsigned int>();
+  servoCfg.frequency=vm["Servo.frequency"].as<unsigned int>();
   servoCfg.bits=vm["Servo.bits"].as<uint16_t>();
   Servo servo(servoCfg);
 

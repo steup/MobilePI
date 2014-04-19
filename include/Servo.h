@@ -27,7 +27,7 @@ class Servo{
       int max=100;
       unsigned int n=100;
       int m=1;
-      unsigned int divider = 27;
+      unsigned int frequency = 50;
       uint8_t bits = 10;
     };
 

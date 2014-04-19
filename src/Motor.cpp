@@ -84,15 +84,10 @@ Motor::Motor(const Motor::Config& config) :
 
 void Motor::speed(Motor::SpeedType value)
 {
-  if(value > mConfig.max){
-    mSpeed=mConfig.max*mConfig.m+mConfig.n;
+  if(value > mConfig.max || value < mConfig.min){
     throw MotorException(MotorException::invalidSpeed);
   }
-  if(value < mConfig.min){
-    mSpeed=mConfig.min*mConfig.m+mConfig.n;
-    throw MotorException(MotorException::invalidSpeed);
-  }
-  mSpeed=(uint32_t)value*mConfig.m/1000+mConfig.n;
+  mSpeed=value*mConfig.m/1000+mConfig.n;
 }
 
 Motor::SpeedType Motor::speed() const{

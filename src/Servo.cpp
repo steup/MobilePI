@@ -5,6 +5,8 @@
 
 #include <bcm2835.h>
 
+static const unsigned long PWMBaseClock=19200000UL;
+
 ServoException::ServoException(Cause code) throw() : mError(errno), mCode(code){}
 
 const char* ServoException::what() const throw()
@@ -26,7 +28,7 @@ Servo::Servo(const Config& config) : mConfig(config){
     throw ServoException(ServoException::initError);
 	bcm2835_gpio_fsel(18, BCM2835_GPIO_FSEL_ALT5);
 	//bcm2835_pwm_set_clock(BCM2835_PWM_CLOCK_DIVIDER_256);
-	bcm2835_pwm_set_clock(mConfig.divider);
+	bcm2835_pwm_set_clock( (PWMBaseClock >> mConfig.bits) / mConfig.frequency );
 	bcm2835_pwm_set_mode(0, 1, 1);
 	bcm2835_pwm_set_range(0, 1<<mConfig.bits);
   angle(0);
@@ -53,5 +55,5 @@ std::ostream& operator<<(std::ostream& out, const Servo& s){
 std::ostream& operator<<(std::ostream& out, const Servo::Config& cfg){
   return out << "Servo(GPIO 18): theta= " << cfg.m << " * x / 1000 + " << cfg.n << ": " 
              << cfg.min << "deg <= theta <= " << cfg.max << "deg - "
-             << "PWM: F_CPU / " << cfg.divider << "Hz, " << (uint16_t)cfg.bits << "bit";
+             << "PWM: " << (PWMBaseClock >> cfg.bits)/cfg.frequency << "Hz, " << (uint16_t)cfg.bits << "bit";
 }
