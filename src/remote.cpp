@@ -10,6 +10,7 @@
 #include <boost/program_options/parsers.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/filesystem/fstream.hpp>
+#include <boost/exception/diagnostic_information.hpp>
 
 using std::cout;
 using std::cerr;
@@ -20,6 +21,7 @@ using namespace boost::program_options;
 using namespace boost::filesystem;
 
 int main(int argc, char** argv){
+  try{
   string progName=path(argv[0]).filename().native();
   path defaultConfigFile = current_path();
   defaultConfigFile/="cfg";
@@ -53,15 +55,10 @@ int main(int argc, char** argv){
   cout << "\tConfig file: " << vm["configFile"].as<path>() << endl;
   store(parse_config_file(configFile, options), vm);
 
-  if(vm["Joystick.id"].as<unsigned int>() >= Joystick::getNumJoysticks()){
-    cerr << "Error: Joystick " << vm["Joystick.id"].as<unsigned int>() << " not available!" << endl;
-    return -1;
-  }
-
+  Joystick   joystick  (vm["Joystick.id"]       .as<unsigned int>());
   CommSender connection(vm["Connection.host"]   .as<string>(),
                         vm["Connection.port"]   .as<uint16_t>(),
                         milliseconds(vm["Connection.timeout"].as<unsigned long>()));
-  Joystick   joystick  (vm["Joystick.id"]       .as<unsigned int>());
   const auto& parameters=connection.getParameters();
 
   cout << "\t" << connection << endl;
@@ -79,6 +76,10 @@ int main(int argc, char** argv){
   joystick.addEventHandler(joystickHandler);
 
   pause();
+  }
+  catch(boost::exception& e){
+    cerr << boost::diagnostic_information(e);
+  }
 
   return 0;
 }

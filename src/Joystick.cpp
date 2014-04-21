@@ -1,16 +1,34 @@
 #include <Joystick.h>
 
+using namespace boost;
+
 std::vector<std::string> Joystick::getAvailableJoysticks(){
-  SDL_Init(SDL_INIT_VIDEO | SDL_INIT_JOYSTICK);
+  if(SDL_Init(SDL_INIT_VIDEO | SDL_INIT_JOYSTICK))
+      throw JoyError::InitError() << JoyError::SDLInfo(SDL_GetError())
+                                << throw_function(__PRETTY_FUNCTION__)
+                                << throw_file(__FILE__)
+                                << throw_line(__LINE__);
   std::vector<std::string> joys;
   for(int i=0;i<SDL_NumJoysticks();i++)
-    joys.push_back(SDL_JoystickName(i));
+  {
+    const char* name=SDL_JoystickName(i);
+    if(!name)
+      throw JoyError::NoSuchJoystick() << JoyError::NumberInfo(i)
+                                     << throw_function(__PRETTY_FUNCTION__)
+                                     << throw_file(__FILE__)
+                                     << throw_line(__LINE__);
+    joys.push_back(name);
+  }
   SDL_Quit();
   return joys;
 }
 
 unsigned int Joystick::getNumJoysticks(){
-  SDL_Init(SDL_INIT_VIDEO | SDL_INIT_JOYSTICK);
+  if(SDL_Init(SDL_INIT_VIDEO | SDL_INIT_JOYSTICK))
+      throw JoyError::InitError() << JoyError::SDLInfo(SDL_GetError())
+                                << throw_function(__PRETTY_FUNCTION__)
+                                << throw_file(__FILE__)
+                                << throw_line(__LINE__);
   unsigned int temp=SDL_NumJoysticks();
   SDL_Quit();
   return temp;
@@ -18,11 +36,20 @@ unsigned int Joystick::getNumJoysticks(){
 
 Joystick::Joystick(unsigned int joyNum) : 
   mJoyNum(joyNum),
-  mThread([this](){handleJoystick();}),
   mRunning(true){
   Lock lock(mMutex);
-  SDL_Init(SDL_INIT_VIDEO | SDL_INIT_JOYSTICK);
+  if(SDL_Init(SDL_INIT_VIDEO | SDL_INIT_JOYSTICK))
+      throw JoyError::InitError() << JoyError::SDLInfo(SDL_GetError())
+                                << throw_function(__PRETTY_FUNCTION__)
+                                << throw_file(__FILE__)
+                                << throw_line(__LINE__);
   mJoyDev=SDL_JoystickOpen(joyNum);
+  if(!mJoyDev)
+    throw JoyError::NoSuchJoystick() << JoyError::NumberInfo(mJoyNum)
+                                   << throw_function(__PRETTY_FUNCTION__)
+                                   << throw_file(__FILE__)
+                                   << throw_line(__LINE__);
+  mThread=std::thread([this](){handleJoystick();});
   SDL_JoystickEventState(SDL_ENABLE);
   SDL_JoystickUpdate();
   mState.axes.resize(SDL_JoystickNumAxes(mJoyDev));
@@ -48,7 +75,11 @@ void Joystick::addEventHandler(EventHandlerType handler){
 void Joystick::handleJoystick(){
   while(mRunning.load()){
     SDL_Event e;
-    SDL_WaitEvent(&e);
+    if(!SDL_WaitEvent(&e))
+      throw JoyError::EventError() << JoyError::SDLInfo(SDL_GetError())
+                                   << throw_function(__PRETTY_FUNCTION__)
+                                   << throw_file(__FILE__)
+                                   << throw_line(__LINE__);
     Lock lock(mMutex);
     switch(e.type){
       case(SDL_JOYAXISMOTION): mState.axes[e.jaxis.axis]=e.jaxis.value;
@@ -62,7 +93,13 @@ void Joystick::handleJoystick(){
 }
 
 std::string Joystick::name() const{
-  return SDL_JoystickName(mJoyNum);
+  const char* name=SDL_JoystickName(mJoyNum);
+  if(!name)
+    throw JoyError::NoSuchJoystick() << JoyError::NumberInfo(mJoyNum)
+                                   << throw_function(__PRETTY_FUNCTION__)
+                                   << throw_file(__FILE__)
+                                   << throw_line(__LINE__);
+  return name;
 }
 
 std::ostream& operator<<(std::ostream& out, const Joystick& j){

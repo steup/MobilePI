@@ -1,5 +1,7 @@
 #pragma once
 
+#include <JoyError.h>
+
 #include <vector>
 #include <string>
 #include <mutex>
@@ -42,8 +44,8 @@ class Joystick{
     Joystick(unsigned int joyNum);
     ~Joystick();
     State getState();
-    void addEventHandler(EventHandlerType handler);
     std::string name() const;
+    void addEventHandler(EventHandlerType handler);
 };
 
 std::ostream& operator<<(std::ostream& out, const Joystick& j);
