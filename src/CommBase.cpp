@@ -2,8 +2,10 @@
 
 #include <sstream>
 #include <boost/asio.hpp>
+#include <boost/exception/exception.hpp>
 
 using namespace boost::asio;
+using namespace boost;
 using boost::system::error_code;
 using boost::system::system_error;
 using boost::asio::ip::udp;
@@ -21,16 +23,17 @@ CommBase::CommBase(unsigned short port, milliseconds timeout)
 }
 
 CommBase::CommBase(const std::string& host, unsigned short port, milliseconds timeout)
-  throw(IOError)
-  : mSocket(mIos, udp::endpoint(udp::v4(), 0)),
-    mTimer(mIos),
-    mIOThread([this](){runIOService();}),
-    mTimeout(timeout){
-  udp::resolver r(mIos);
-  stringstream ss;
-  ss << port;
-  mEndpoint=*r.resolve({udp::v4(), host, ss.str()});
-}
+  throw(IOError) :
+  mSocket(mIos, udp::endpoint(udp::v4(), 0)),
+  mTimer(mIos),
+  mTimeout(timeout)
+  {
+    udp::resolver r(mIos);
+    stringstream ss;
+    ss << port;
+    mEndpoint=*r.resolve({udp::v4(), host, ss.str()});
+    mIOThread=std::thread([this](){runIOService();});
+  }
 
 void CommBase::startReceive(const ReceiveBuffers& buffers) throw(IOError){
   auto func = [this](const error_code& ec, size_t bytes){
