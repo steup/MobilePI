@@ -1,6 +1,6 @@
 #pragma once
 
-#include <JoyError.h>
+#include <JoystickError.h>
 
 #include <vector>
 #include <string>
@@ -30,6 +30,7 @@ class Joystick{
     SDL_Joystick* mJoyDev;
     unsigned int mJoyNum;
     boost::signals2::signal<void (const State&)> eventCallback;
+    boost::signals2::signal<void (std::exception& e)> errorCallback;
     State mState;
     std::thread mThread;
     std::atomic<bool> mRunning;
@@ -38,6 +39,7 @@ class Joystick{
 
   public:
     using EventHandlerType = boost::signals2::signal<void (const State&)>::slot_type;
+    using ErrorHandlerType = boost::signals2::signal<void (std::exception&)>::slot_type;
 
     static std::vector<std::string> getAvailableJoysticks();
     static unsigned int getNumJoysticks();
@@ -46,6 +48,7 @@ class Joystick{
     State getState();
     std::string name() const;
     void addEventHandler(EventHandlerType handler);
+    void addErrorHandler(ErrorHandlerType handler);
 };
 
 std::ostream& operator<<(std::ostream& out, const Joystick& j);
