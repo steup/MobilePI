@@ -1,9 +1,11 @@
 #pragma once
 
+#include <exception>
+#include <sstream>
+
 #include <boost/exception/exception.hpp>
 #include <boost/exception/info.hpp>
 #include <boost/exception/get_error_info.hpp>
-#include <exception>
 
 class JoystickError : public virtual boost::exception,
                       public virtual std::exception{
@@ -13,8 +15,8 @@ class JoystickError : public virtual boost::exception,
       InitError,
       EventError
     };
-    using NumberInfo = boost::error_info< struct NumberInfo, int   >;
-    using SDLInfo    = boost::error_info< struct SDLInfo,    char* >;
+    using NumberInfo = boost::error_info< struct NumberInfoTag, int   >;
+    using SDLInfo    = boost::error_info< struct SDLInfoTag,    char* >;
   private:
     Cause mCause;
     JoystickError(Cause cause) throw() : mCause(cause){}
@@ -49,5 +51,6 @@ class JoystickError : public virtual boost::exception,
         msg << *errorPtr;
       return msg.str().c_str();
     }
+    Cause cause() const{return mCause;}
     bool operator==(const JoystickError& a) const{return mCause==a.mCause;}
 };
