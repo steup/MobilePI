@@ -1,10 +1,5 @@
 #include <Motor.h>
-
-#include <string>
-#include <sstream>
-#include <algorithm>
-#include <cstring>
-#include <iostream>
+#include <MotorError.h>
 
 #include <sys/mman.h>
 #include <errno.h>
@@ -14,10 +9,9 @@
 #include <bcm2835.h>
 
 using namespace std;
+using namespace boost;
 
-MotorException::MotorException(Cause code) throw() : mCode(code){}
-
-timespec operator+(timespec time, unsigned long long duration){
+static timespec operator+(timespec time, unsigned long long duration){
   timespec temp=time;
   temp.tv_nsec+=duration;
   temp.tv_sec+=temp.tv_nsec/1000000000ULL;
@@ -30,6 +24,7 @@ ostream& operator<<(ostream& out, const timespec& time){
 }
 
 void Motor::motorTask( Motor& motor){
+  try{
   mlockall(MCL_CURRENT | MCL_FUTURE);
   sched_param sParam;
   timespec now;
@@ -38,41 +33,48 @@ void Motor::motorTask( Motor& motor){
   
   sParam.sched_priority=99;
   if(pthread_setschedparam(motor.mThread.native_handle(), SCHED_FIFO, &sParam))
-    cerr << "Error: creating rt-thread: " << strerror(errno) << endl;
+    throw MotorError::RTError() << errinfo_errno(errno)
+                                << throw_function(__PRETTY_FUNCTION__)
+                                << throw_file(__FILE__)
+                                << throw_line(__LINE__);
   unsigned long long maxTicks = 1ULL << motor.mConfig.bits;
   unsigned long long baseTick = 1000000000ULL / motor.mConfig.frequency  / maxTicks;
-  clock_getres(CLOCK_MONOTONIC, &resolution);
-  cout << "Resolution: " << resolution << endl;
   bcm2835_init();
   bcm2835_gpio_fsel(motor.mConfig.pin, BCM2835_GPIO_FSEL_OUTP);
   retval=clock_gettime(CLOCK_MONOTONIC, &now);
   if(retval)
-    cerr << "Error: getting current time of CLOCK_REALTIME: " << strerror(retval) << endl;
+    throw MotorError::ClockError() << errinfo_errno(errno)
+                                   << throw_function(__PRETTY_FUNCTION__)
+                                   << throw_file(__FILE__)
+                                   << throw_line(__LINE__);
+  }
+  catch(std::exception& e){
+    errorCallback(e);
+    return;
+  }
   while(!motor.stopped())
   {
+    try{
     bcm2835_gpio_set(motor.mConfig.pin);
     now=now + baseTick * motor.mSpeed.load();
     retval = clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &now, NULL);
     if(retval)
-      cerr << "Error: sleeping for " << now << ": " << strerror(retval) << endl;
+      throw MotorError::SleepError() << errinfo_errno(errno)
+                                     << throw_function(__PRETTY_FUNCTION__)
+                                     << throw_file(__FILE__)
+                                     << throw_line(__LINE__);
     bcm2835_gpio_clr(motor.mConfig.pin);
     now=now + baseTick * (maxTicks-motor.mSpeed.load());
     retval = clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &now, NULL);
     if(retval)
-      cerr << "Error: sleeping for " << now << ": " << strerror(retval) << endl;
+      throw MotorError::SleepError() << errinfo_errno(errno)
+                                     << throw_function(__PRETTY_FUNCTION__)
+                                     << throw_file(__FILE__)
+                                     << throw_line(__LINE__);
+    }catch(std::exception& e){
+      errorCallback(e);
+    }
   }
-}
-
-const char* MotorException::what() const throw()
-{
-  string msg="Error ";
-  switch(mCode)
-  {
-    case(invalidSpeed): msg+="speed exceeding max. speed";
-                        break;
-    case(noModule)    : msg+="swpwm module not loaded";
-  }
-  return msg.c_str();
 }
 
 Motor::Motor(const Motor::Config& config) : 
@@ -85,7 +87,10 @@ Motor::Motor(const Motor::Config& config) :
 void Motor::speed(Motor::SpeedType value)
 {
   if(value > mConfig.max || value < mConfig.min){
-    throw MotorException(MotorException::invalidSpeed);
+    throw MotorError::InvalidSpeed() << MotorError::SpeedInfo(value)
+                                     << throw_function(__PRETTY_FUNCTION__)
+                                     << throw_file(__FILE__)
+                                     << throw_line(__LINE__);
   }
   mSpeed=value*mConfig.m/1000+mConfig.n;
 }
@@ -108,4 +113,8 @@ std::ostream& operator<<(std::ostream& out, const Motor& m){
 
 std::ostream& operator<<(std::ostream& out, const Motor::Config& cfg){
   return out << "Motor(GPIO " << (uint16_t)cfg.pin << "): v = " << cfg.m << " * x / 1000 + " << cfg.n << " - " << cfg.min << "m/s < v < " << cfg.max << "m/s - " << "PWM: " << cfg.frequency << "Hz, " << (uint16_t)cfg.bits << "bit";
+}
+
+void Joystick::addErrorHandler(ErrorHandlerType handler){
+  errorCallback.connect(handler);
 }

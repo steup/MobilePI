@@ -1,23 +1,10 @@
 #pragma once
-#include <exception>
+
 #include <thread>
 #include <atomic>
 #include <ostream>
 
-class MotorException : public std::exception{
-  public:
-    enum Cause{
-      invalidSpeed,
-      noModule
-    };
-  private:
-    Cause mCode;
-  public:
-    MotorException(Cause code) throw();
-    virtual const char* what() const throw();
-    Cause code() const{return mCode;}
-    bool operator==(const MotorException& e) const{return mCode==e.mCode;}
-};
+#include <boost/signals2/signal.hpp>
 
 class Motor{
   public:
@@ -37,14 +24,18 @@ class Motor{
     const Config      mConfig;
     std::thread            mThread;
     bool                   mStop;
+    boost::signals2::signal<void (std::exception& e)> errorCallback;
     static void motorTask(Motor& motor);
   public:
+    using ErrorHandlerType = boost::signals2::signal<void (std::exception&)>::slot_type;
+
     Motor(const Config& config);
     ~Motor();
     void speed(SpeedType speed);
     SpeedType speed() const;
     const Config& config() const {return mConfig;}
     bool stopped() const {return mStop;}
+    void addErrorHandler(ErrorHandlerType handler);
 };
 
 std::ostream& operator<<(std::ostream& out, const Motor& s);
