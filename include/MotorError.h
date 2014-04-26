@@ -4,29 +4,34 @@
 #include <exception>
 #include <boost/exception/exception.hpp>
 #include <boost/exception/info.hpp>
+#include <boost/exception/errinfo_errno.hpp>
 #include <boost/exception/get_error_info.hpp>
 
 class MotorError : public virtual boost::exception,
                    public virtual std::exception{
   public:
-    enum Cause{
-      InvalidSpeed
+    enum class Cause{
+      InvalidSpeed,
       RTError,
       ClockError,
       SleepError
     };
     using SpeedInfo = boost::error_info< struct SpeedInfoTag, int >;
   private:
-    Cause mCode;
+    Cause mCause;
     MotorError(Cause cause) : mCause(cause){}
   public:
-    static MotorError InvalidSpeed(){return MotorError(Cause::InvalidSpeed);}
+    static MotorError InvalidSpeed() {return MotorError(Cause::InvalidSpeed);}
+    static MotorError ClockError  () {return MotorError(Cause::ClockError);  }
+    static MotorError SleepError  () {return MotorError(Cause::SleepError);  }
+    static MotorError RTError     () {return MotorError(Cause::RTError);     }
+
     virtual const char* what() const throw(){
       const boost::throw_function::value_type* const funcPtr  = boost::get_error_info<boost::throw_function>(*this);
       const boost::throw_file::value_type* const     filePtr  = boost::get_error_info<boost::throw_file>(*this);
       const boost::throw_line::value_type* const     linePtr  = boost::get_error_info<boost::throw_line>(*this);
       const SpeedInfo::value_type* const             speedPtr = boost::get_error_info<SpeedInfo>(*this);
-      const errinfo_errno::value_type* const         errnoPtr = boost::get_error_info<errinfo_errno>(*this);
+      const boost::errinfo_errno::value_type* const  errnoPtr = boost::get_error_info<boost::errinfo_errno>(*this);
 
       std::stringstream msg;
       if(funcPtr && filePtr && linePtr)

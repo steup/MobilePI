@@ -1,7 +1,9 @@
 
 #include <CommReceiver.h>
 #include <Motor.h>
+#include <MotorError.h>
 #include <Servo.h>
+//#include <ServoError.h>
 
 #include <chrono>
 #include <iostream>
@@ -107,13 +109,13 @@ int main(int argc, char** argv){
       motor.speed(connection.getMoveData().speed);
       servo.angle(connection.getMoveData().angle);
     }
-    catch(MotorException e){
+    catch(MotorError& e){
       cerr << e.what() << endl;
     }
-    catch(ServoException e){
+/*    catch(ServoException e){
       motor.speed(0);
       cerr << e.what() << endl;
-    }
+    }*/
   };
 
   connection.addErrorHandler(errorHandler);
