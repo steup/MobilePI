@@ -1,35 +1,41 @@
 #include <CommSender.h>
+#include <CommError.h>
 
 #include <boost/asio.hpp>
 
 using boost::asio::const_buffer;
 using std::chrono::milliseconds;
 
-CommSender::CommSender(const std::string& host, unsigned short port, milliseconds timeout) throw(IOError):
-  CommBase(host, port, timeout),
-  mLeds(mInit.numLeds, CommData::LedData()){
+CommSender::CommSender(const std::string& host, unsigned short port, milliseconds timeout)  : CommBase(host, port, timeout),
+    mLeds(mInit.numLeds, CommData::LedData()){
   startTimer();
 }
 
-void CommSender::setMoveData(Move move) throw(){
+void CommSender::setMoveData(Move move){
   mMutex.lock();
   mMove=move;
   startTransmit(createTransmitBuffers());
 }
 
-void CommSender::setLedsData(Leds leds) throw(){
+void CommSender::setLedsData(uint8_t i, Led led){
   mMutex.lock();
-  mLeds=leds;
+  try{
+    mLeds.at(i)=led;
+  }catch(std::exception& e){
+    throw CommError::LedError() << CommError::LedInfo(i)
+                                << throw_function(__PRETTY_FUNCTION__)
+                                << throw_file(__FILE__)
+                                << throw_line(__LINE__);
+  }
   startTransmit(createTransmitBuffers());
 }
 
-void CommSender::handleTimeout(const ErrorCode& e) throw(IOError, CommError){
+void CommSender::handleTimeout(const ErrorCode& e){
   mMutex.lock();
   startTransmit(createTransmitBuffers());
-  throw CommError(CommError::timeout);
 }
 
-void CommSender::handleEvent(const ErrorCode& e, std::size_t bytes) throw(IOError, CommError){
+void CommSender::handleEvent(const ErrorCode& e, std::size_t bytes){
   mMutex.unlock();
   startTimer();
 }

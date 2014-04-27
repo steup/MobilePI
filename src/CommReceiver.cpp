@@ -1,4 +1,5 @@
 #include <CommReceiver.h>
+#include <CommError.h>
 
 #include <iostream>
 #include <functional>
@@ -10,7 +11,6 @@ using std::vector;
 using std::chrono::milliseconds;
 
 CommReceiver::CommReceiver(unsigned short port, milliseconds timeout, uint8_t numLeds, uint8_t maxBrightness, int32_t maxSpeed, int32_t maxAngle) 
-  throw(IOError)
   : CommBase(port, timeout), mCurBuf(0),
     mLeds({std::vector<CommData::LedData>(mInit.numLeds, CommData::LedData()),
         std::vector<CommData::LedData>(mInit.numLeds, CommData::LedData())}){
@@ -18,7 +18,7 @@ CommReceiver::CommReceiver(unsigned short port, milliseconds timeout, uint8_t nu
   startTimer();
 }
 
-CommBase::ReceiveBuffers CommReceiver::createReceiveBuffers() throw(){
+CommBase::ReceiveBuffers CommReceiver::createReceiveBuffers(){
   unsigned int unusedBuf=(mCurBuf+1)%cNumBufs;
   CommBase::ReceiveBuffers buffers;
 
@@ -27,7 +27,7 @@ CommBase::ReceiveBuffers CommReceiver::createReceiveBuffers() throw(){
   return buffers;
 }
 
-void CommReceiver::handleEvent(const CommBase::ErrorCode& e, size_t bytes) throw(CommError, IOError){
+void CommReceiver::handleEvent(const CommBase::ErrorCode& e, size_t bytes)
   if( bytes == ( sizeof(CommData::MoveData) + mInit.numLeds*sizeof(CommData::LedData) )){
     startTimer();
     mCurBuf=(mCurBuf.load()+1)%cNumBufs;
@@ -44,7 +44,7 @@ void CommReceiver::handleEvent(const CommBase::ErrorCode& e, size_t bytes) throw
   eventCallback();
 }
 
-void CommReceiver::handleTimeout(const CommBase::ErrorCode& e) throw(IOError, CommError){
+void CommReceiver::handleTimeout(const CommBase::ErrorCode& e){
   throw CommError(CommError::timeout);
 }
 
