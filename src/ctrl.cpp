@@ -4,6 +4,7 @@
 #include <MotorError.h>
 #include <Servo.h>
 #include <ServoError.h>
+#include <Log.h>
 
 #include <chrono>
 #include <iostream>
@@ -20,6 +21,7 @@ using std::cout;
 using std::cerr;
 using std::endl;
 using std::string;
+using boost:get_error_info;
 using namespace std::chrono;
 using namespace boost::program_options;
 using namespace boost::filesystem;
@@ -116,20 +118,26 @@ int main(int argc, char** argv){
         servo.angle(connection.getMoveData().angle);
       }
       catch(MotorError& e){
-        if(e==MotorError::InvalidSpeed())
-        {
-          const MotorError::SpeedInfo*const speedPtr = boost::get_error_info<MotorError::SpeedInfo>(e);
-          if(speedPtr)
-            motor.speed(*speedPtr>Motor.config().max?Motor.config().max:Motor.config().min);
+        if(e==MotorError::InvalidSpeed()){
+          const MotorError::SpeedInfo*const speedPtr = get_error_info<MotorError::SpeedInfo>(e);
+          if(speedPtr){
+            if(*speedPtr>motor.config().max)
+              motor.speed(motor.config().max);
+            else
+              motor.speed(motor.config().min);
+          }
         }
         errorLog << e.what() << endl;
       }
       catch(ServoError& e){
-        if(e==ServoError::InvalidAngle())
-        {
+        if(e==ServoError::InvalidAngle()){
           const ServoError::AngleInfo*const anglePtr = boost::get_error_info<ServoError::AngleInfo>(e);
-          if(anglePtr)
-            servo.angle(*anglePtr>Servo.config().max?Servo.config().max:Servo.config().min);
+          if(anglePtr){
+            if(*anglePtr>servo.config().max)
+              servo.angle(servo.config().max);
+            else
+              servo.angle(servo.config().min);
+          }
         }
         errorLog << e.what() << endl;
       }
