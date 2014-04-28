@@ -78,7 +78,7 @@ int main(int argc, char** argv){
       connection.setMoveData({speed, angle});
     };
 
-    auto errorHandler = [&](std::exception& e){
+    auto errorHandler = [&](std::exception& e)throw(){
       errorLog << e.what() << std::endl;
     };
 

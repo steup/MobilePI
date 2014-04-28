@@ -20,7 +20,7 @@ class CommBase{
     using IOError = boost::system::system_error;
 
     /* \brief Error callback type */
-    using ErrorHandlerType = boost::signals2::signal<void (std::exception&)>::slot_type;
+    using ErrorHandlerType = boost::signals2::signal<void (std::exception&) throw()>::slot_type;
 
   protected:
 
@@ -28,18 +28,18 @@ class CommBase{
     using TransmitBuffers = std::vector<boost::asio::const_buffer>;
 
   private:
+    boost::signals2::signal<void(std::exception& e) throw()> errorCallback;
     boost::asio::io_service mIos;
     boost::asio::ip::udp::socket mSocket;
     boost::asio::ip::udp::endpoint mEndpoint;
     boost::asio::steady_timer mTimer;
-    boost::signals2::signal<void(std::exception& e)> errorCallback;
     std::thread mIOThread;
     std::chrono::milliseconds mTimeout;
 
     void runIOService() throw();
   protected:
     virtual void handleTimeout(const ErrorCode& e) =0;
-    virtual void handleEvent(const ErrorCode& e, std::size_t bytes)  =0;
+    virtual void handleEvent(const ErrorCode& e, std::size_t bytes) =0;
     void startTimer();
     void startReceive(const ReceiveBuffers& buffers);
     void startTransmit(const TransmitBuffers& buffers);

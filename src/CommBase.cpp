@@ -60,14 +60,12 @@ void CommBase::startTimer(){
 void CommBase::runIOService() throw()
 {
   io_service::work w(mIos);
-  while(true){
+  while(true)
     try{
       mIos.run();
-    }
-    catch(std::exception& e){
+    }catch(std::exception& e){
       errorCallback(e);
     }
-  }
 }
 
 milliseconds CommBase::timeout() const{
