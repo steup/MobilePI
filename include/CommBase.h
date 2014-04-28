@@ -16,9 +16,6 @@ class CommBase{
     /* \brief Error code type */
     using ErrorCode = boost::system::error_code;
 
-    /* \brief IO error type */
-    using IOError = boost::system::system_error;
-
     /* \brief Error callback type */
     using ErrorHandlerType = boost::signals2::signal<void (std::exception&) throw()>::slot_type;
 

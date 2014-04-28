@@ -1,4 +1,3 @@
-
 #include <CommReceiver.h>
 #include <Motor.h>
 #include <MotorError.h>
@@ -21,7 +20,7 @@ using std::cout;
 using std::cerr;
 using std::endl;
 using std::string;
-using boost:get_error_info;
+using boost::get_error_info;
 using namespace std::chrono;
 using namespace boost::program_options;
 using namespace boost::filesystem;
@@ -119,9 +118,9 @@ int main(int argc, char** argv){
       }
       catch(MotorError& e){
         if(e==MotorError::InvalidSpeed()){
-          const MotorError::SpeedInfo*const speedPtr = get_error_info<MotorError::SpeedInfo>(e);
+          const MotorError::SpeedInfo::value_type* const speedPtr = get_error_info<MotorError::SpeedInfo>(e);
           if(speedPtr){
-            if(*speedPtr>motor.config().max)
+            if(*speedPtr > motor.config().max)
               motor.speed(motor.config().max);
             else
               motor.speed(motor.config().min);
@@ -131,9 +130,9 @@ int main(int argc, char** argv){
       }
       catch(ServoError& e){
         if(e==ServoError::InvalidAngle()){
-          const ServoError::AngleInfo*const anglePtr = boost::get_error_info<ServoError::AngleInfo>(e);
+          const ServoError::AngleInfo::value_type* const anglePtr = boost::get_error_info<ServoError::AngleInfo>(e);
           if(anglePtr){
-            if(*anglePtr>servo.config().max)
+            if(*anglePtr > servo.config().max)
               servo.angle(servo.config().max);
             else
               servo.angle(servo.config().min);

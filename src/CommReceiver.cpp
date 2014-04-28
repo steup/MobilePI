@@ -25,34 +25,31 @@ CommBase::ReceiveBuffers CommReceiver::createReceiveBuffers(){
   return buffers;
 }
 
-void CommReceiver::handleEvent(const CommBase::ErrorCode& e, size_t bytes) throw(){
-  try{
-    if( bytes == ( sizeof(CommData::MoveData) + mInit.numLeds*sizeof(CommData::LedData) )){
-      startTimer();
-      mCurBuf=(mCurBuf.load()+1)%cNumBufs;
-    }
-    
-    startReceive(createReceiveBuffers());
-    
-    if( e )
-      throw IOError(e) << throw_function(__PRETTY_FUNCTION__)
-                       << throw_file(__FILE__)
-                       << throw_line(__LINE__);
-
-    if( bytes != ( sizeof(CommData::MoveData) + mInit.numLeds * sizeof(CommData::LedData) ))
-      throw CommError::invalidData() << throw_function(__PRETTY_FUNCTION__)
-                                     << throw_file(__FILE__)
-                                     << throw_line(__LINE__);
-  }catch(std::exception& e){
-    errorCallback(e);
+void CommReceiver::handleEvent(const CommBase::ErrorCode& e, size_t bytes){
+  if( bytes == ( sizeof(CommData::MoveData) + mInit.numLeds*sizeof(CommData::LedData) )){
+    startTimer();
+    mCurBuf=(mCurBuf.load()+1)%cNumBufs;
   }
+  
+  startReceive(createReceiveBuffers());
+  
+  if( e )
+    throw CommError::IOError() << CommError::IOErrorInfo(e)
+                               << throw_function(__PRETTY_FUNCTION__)
+                               << throw_file(__FILE__)
+                               << throw_line(__LINE__);
+
+  if( bytes != ( sizeof(CommData::MoveData) + mInit.numLeds * sizeof(CommData::LedData) ))
+    throw CommError::InvalidData() << throw_function(__PRETTY_FUNCTION__)
+                                   << throw_file(__FILE__)
+                                   << throw_line(__LINE__);
   eventCallback();
 }
 
-void CommReceiver::handleTimeout(const CommBase::ErrorCode& e) throw(){
-  errorCallback(CommError::timeout() << throw_function(__PRETTY_FUNCTION__)
-                                     << throw_file(__FILE__)
-                                     << throw_line(__LINE__));
+void CommReceiver::handleTimeout(const CommBase::ErrorCode& e){
+  throw CommError::Timeout() << throw_function(__PRETTY_FUNCTION__)
+                             << throw_file(__FILE__)
+                             << throw_line(__LINE__);
 }
 
 std::ostream& operator<<(std::ostream& out, const CommReceiver& recv){
