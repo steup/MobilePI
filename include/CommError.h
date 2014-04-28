@@ -44,7 +44,7 @@ class CommError : public virtual boost::exception,
                                        break;
       }
       if(ledPtr)
-        msg << *Ptr;
+        msg << *ledPtr;
       return msg.str().c_str();
     }
     Cause cause() const{return mCause;}

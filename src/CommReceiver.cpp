@@ -1,12 +1,10 @@
 #include <CommReceiver.h>
 #include <CommError.h>
 
-#include <iostream>
-#include <functional>
-
 #include <boost/asio.hpp>
 
 using boost::asio::mutable_buffer;
+using namespace boost;
 using std::vector;
 using std::chrono::milliseconds;
 
@@ -36,16 +34,22 @@ void CommReceiver::handleEvent(const CommBase::ErrorCode& e, size_t bytes)
   startReceive(createReceiveBuffers());
   
   if( e )
-    throw IOError(e);
+    throw IOError(e) << throw_function(__PRETTY_FUNCTION__)
+                     << throw_file(__FILE__)
+                     << throw_line(__LINE__);
 
   if( bytes != ( sizeof(CommData::MoveData) + mInit.numLeds * sizeof(CommData::LedData) ))
-    throw CommError(CommError::invalidData);
+    throw CommError::invalidData() << throw_function(__PRETTY_FUNCTION__)
+                                   << throw_file(__FILE__)
+                                   << throw_line(__LINE__);
 
   eventCallback();
 }
 
 void CommReceiver::handleTimeout(const CommBase::ErrorCode& e){
-  throw CommError(CommError::timeout);
+  errorCallback(CommError::timeout() << throw_function(__PRETTY_FUNCTION__)
+                                     << throw_file(__FILE__)
+                                     << throw_line(__LINE__));
 }
 
 std::ostream& operator<<(std::ostream& out, const CommReceiver& recv){

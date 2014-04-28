@@ -15,9 +15,9 @@ class CommSender : public CommBase{
     CommData::MoveData mMove;
     std::vector<CommData::LedData> mLeds;
 
-    virtual void handleTimeout(const ErrorCode& e) throw(IOError, CommError);
-    virtual void handleEvent(const ErrorCode& e, std::size_t bytes) throw(IOError, CommError);
-    CommBase::TransmitBuffers createTransmitBuffers() const throw();
+    virtual void handleTimeout(const ErrorCode& e);
+    virtual void handleEvent(const ErrorCode& e, std::size_t bytes);
+    CommBase::TransmitBuffers createTransmitBuffers() const;
 
   public:
     using Leds = std::vector<CommData::LedData>;
@@ -27,12 +27,12 @@ class CommSender : public CommBase{
     CommSender(const CommSender&) = delete;
     CommSender& operator=(const CommSender&) = delete;
 
-    CommSender(const std::string& host, unsigned short port, std::chrono::milliseconds timeout) throw(IOError);
+    CommSender(const std::string& host, unsigned short port, std::chrono::milliseconds timeout);
     const Move& getMoveData() const throw(){return mMove;}
     const Leds& getLedData()  const throw(){return mLeds;}
     const Parameters& getParameters() const throw(){return mInit;}
-    void setMoveData(Move move) throw();
-    void setLedsData(Leds leds)  throw();
+    void setMoveData(const Move& move);
+    void setLedsData(const Leds& leds);
 };
 
 std::ostream& operator<<(std::ostream& out, const CommSender& sender);

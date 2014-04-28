@@ -1,6 +1,5 @@
 #pragma once
 #include <CommData.h>
-#include <CommError.h>
 #include <CommBase.h>
 
 #include <cstdint>
@@ -23,9 +22,9 @@ class CommReceiver : public CommBase{
     std::vector<CommData::LedData> mLeds[cNumBufs];
     boost::signals2::signal<void()> eventCallback;
 
-    virtual void handleEvent(const CommBase::ErrorCode& e, std::size_t bytes) throw(IOError, CommError);
-    virtual void handleTimeout(const CommBase::ErrorCode& e) throw(IOError, CommError);
-    CommBase::ReceiveBuffers createReceiveBuffers() throw();
+    virtual void handleEvent(const CommBase::ErrorCode& e, std::size_t bytes);
+    virtual void handleTimeout(const CommBase::ErrorCode& e);
+    CommBase::ReceiveBuffers createReceiveBuffers();
 
   public:
     using Leds = std::vector<CommData::LedData>;
@@ -37,9 +36,9 @@ class CommReceiver : public CommBase{
 
     CommReceiver(unsigned short port, std::chrono::milliseconds timeout,
                    uint8_t numLeds, uint8_t maxBrightness, int32_t maxSpeed, 
-                   int32_t maxAngle) throw(IOError);
-    Move getMoveData() const throw(){return mMove[mCurBuf.load()];}
-    Leds getLedData()  const throw(){return mLeds[mCurBuf.load()];}
+                   int32_t maxAngle);;
+    Move getMoveData() const {return mMove[mCurBuf.load()];}
+    Leds getLedData()  const {return mLeds[mCurBuf.load()];}
 
     /* \brief add an event handler
      * \param handler the event handler

@@ -20,7 +20,7 @@ class CommBase{
     using IOError = boost::system::system_error;
 
     /* \brief Error callback type */
-    using ErrorHandlerType = boost::signals2::signal<void (CommError)>::slot_type;
+    using ErrorHandlerType = boost::signals2::signal<void (std::exception&)>::slot_type;
 
   protected:
 
@@ -32,17 +32,17 @@ class CommBase{
     boost::asio::ip::udp::socket mSocket;
     boost::asio::ip::udp::endpoint mEndpoint;
     boost::asio::steady_timer mTimer;
-    boost::signals2::signal<void(CommError e)> errorCallback;
+    boost::signals2::signal<void(std::exception& e)> errorCallback;
     std::thread mIOThread;
     std::chrono::milliseconds mTimeout;
 
     void runIOService() throw();
   protected:
-    virtual void handleTimeout(const ErrorCode& e) throw(IOError, CommError) =0;
-    virtual void handleEvent(const ErrorCode& e, std::size_t bytes) throw(IOError, CommError) =0;
-    void startTimer() throw(IOError);
-    void startReceive(const ReceiveBuffers& buffers) throw(IOError);
-    void startTransmit(const TransmitBuffers& buffers) throw(IOError);
+    virtual void handleTimeout(const ErrorCode& e) =0;
+    virtual void handleEvent(const ErrorCode& e, std::size_t bytes)  =0;
+    void startTimer();
+    void startReceive(const ReceiveBuffers& buffers);
+    void startTransmit(const TransmitBuffers& buffers);
   public:
 
 
@@ -53,10 +53,10 @@ class CommBase{
     CommBase& operator=(const CommBase&) = delete;
 
     /* \brief Sender constructor*/
-    CommBase(const std::string& host, unsigned short port, std::chrono::milliseconds timeout) throw(IOError);
+    CommBase(const std::string& host, unsigned short port, std::chrono::milliseconds timeout);
 
     /* \brief Receiver constructor*/
-    CommBase(unsigned short port, std::chrono::milliseconds timeout) throw(IOError);
+    CommBase(unsigned short port, std::chrono::milliseconds timeout);
 
     /* \brief add an error handler
      * \param handler the error handler
