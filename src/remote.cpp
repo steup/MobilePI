@@ -72,7 +72,7 @@ int main(int argc, char** argv){
 
     auto joystickHandler = [&](const Joystick::State& state){
       cout << state.axes[3] << ", " << state.axes[0] << endl;
-      int16_t speed=(int32_t)state.axes[3]*parameters.maxSpeed/state.axisMax;
+      int16_t speed=-(int32_t)state.axes[3]*parameters.maxSpeed/state.axisMax;
       int16_t angle=(int32_t)state.axes[0]*parameters.maxAngle/state.axisMax;
       cout << speed << ", " << angle << endl;
       connection.setMoveData({speed, angle});
