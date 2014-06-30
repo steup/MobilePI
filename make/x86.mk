@@ -1,5 +1,10 @@
-CXXFLAGS     += -march=native
-LIBS         += SDL
-ARCH_OBJECTS := remote Joystick CommSender
+GTKMM_VERSION ?= 3.0
 
-TARGET       := remote
+CXXFLAGS      += -march=native $(shell pkg-config gtkmm-${GTKMM_VERSION} --cflags)
+
+LIBS          += SDL
+LD_POST       += $(shell pkg-config gtkmm-${GTKMM_VERSION} --libs)
+
+ARCH_OBJECTS  := remote Joystick CommSender GUI
+
+TARGET        := remote

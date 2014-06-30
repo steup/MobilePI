@@ -1,7 +1,8 @@
 TARGETS        := ctrl remote
 
 CXXFLAGS       := -Wall -Os -g -std=gnu++11 -pthread
-LDFLAGS        := -Wl,-O1 -pthread
+LDFLAGS        := -O1
+LD_PRE         := -pthread
 COMMON_OBJECTS := CommBase
 INCLUDE        := ./include
 BUILD          := ./build

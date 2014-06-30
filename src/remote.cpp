@@ -1,6 +1,7 @@
 #include <CommSender.h>
 #include <Joystick.h>
 #include <Log.h>
+#include <GUI.h>
 
 #include <chrono>
 #include <iostream>
@@ -22,6 +23,7 @@ using namespace boost::program_options;
 using namespace boost::filesystem;
 
 int main(int argc, char** argv){
+  GUI gui(argc, argv, "./glade/gui.glade");
   try{
     string progName=path(argv[0]).filename().native();
     path defaultConfigFile = current_path();
@@ -69,13 +71,13 @@ int main(int argc, char** argv){
     cout << "\t" << connection << endl;
     cout << "\t" << joystick   << endl;
     cout << "\t" << parameters << endl;
+    gui.joystick(joystick.name());
 
     auto joystickHandler = [&](const Joystick::State& state){
-      cout << state.axes[3] << ", " << state.axes[0] << endl;
       int16_t speed=-(int32_t)state.axes[3]*parameters.maxSpeed/state.axisMax;
       int16_t angle=(int32_t)state.axes[0]*parameters.maxAngle/state.axisMax;
-      cout << speed << ", " << angle << endl;
       connection.setMoveData({speed, angle});
+      gui.value(GUI::Control((float)speed/parameters.maxSpeed, (float)angle/parameters.maxAngle));
     };
 
     auto errorHandler = [&](std::exception& e)throw(){
@@ -86,7 +88,7 @@ int main(int argc, char** argv){
     joystick.addErrorHandler(errorHandler);
     connection.addErrorHandler(errorHandler);
 
-    pause();
+    return gui.run();
   }
   catch(std::exception& e){
     cerr << std::endl;
