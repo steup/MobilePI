@@ -1,26 +1,35 @@
-LDPATHS      := $(addprefix -L, ${LDPATHS})
-LIBS         := $(addprefix -l, ${LIBS})
-INCLUDES     := $(addprefix -I, ${INCLUDES})
+LD_PRE       += $(foreach flag, ${LDFLAGS}, -Wl,${flag})
+LD_POST      += $(addprefix -L, ${LDPATHS}) $(addprefix -l, ${LIBS})
+CXXFLAGS     += $(addprefix -I, ${INCLUDES})
 OBJECTS      := $(addprefix ${BUILD}/,$(addsuffix .o, ${ARCH_OBJECTS} ${COMMON_OBJECTS}))
 TARGET       := ${BIN}/${TARGET}
 
 DEPENDANCIES := $(wildcard ${BUILD}/*.o.d)
 
-.PHONY: all clean
+.PHONY: all clean run
 
 all: ${TARGET}
 
+run: ${TARGET}
+	@echo -e "Executing $<\n"
+	@./$<
+
 clean:
-	rm -rf ${BUILD} ${BIN}
+	@echo "Cleaning [${BUILD} ${BIN}]"
+	@rm -rf ${BUILD} ${BIN}
 
 ${BIN} ${BUILD}: %:
-	mkdir -p $@
+	@echo "Creating Directory $@"
+	@mkdir -p $@
 
 ${TARGET}: ${OBJECTS} | ${BIN}
-	${CXX} ${LDFLAGS} $^ ${LDPATHS} ${LIBS} -o $@
+	@echo "Linking $@ <- [$^]"
+	@${CXX} ${LD_PRE} $^ ${LD_POST} -o $@
 
 ${OBJECTS}: ${BUILD}/%.o : ${SRC}/%.cpp | ${BUILD}
-	${CXX} -MM -MT $@ ${CXXFLAGS} ${INCLUDES} $< -o $@.d
-	${CXX} -c ${CXXFLAGS} ${INCLUDES} $< -o $@
+	@echo "Building Dependancy $@ <- $<"
+	@${CXX} -MM -MT $@ ${CXXFLAGS} $< -o $@.d
+	@echo "Compiling $@ <- $<"
+	@${CXX} -c ${CXXFLAGS} $< -o $@
 
 include ${DEPENDANCIES}
