@@ -3,6 +3,8 @@
 #include <gtkmm/label.h>
 #include <gtkmm/application.h>
 #include <gtkmm/window.h>
+#include <cairomm/context.h>
+#include <gtkmm/drawingarea.h>
 
 #include <string>
 
@@ -19,6 +21,7 @@ class GUI{
     Gtk::Label* mThetaLabel = NULL;
     Gtk::Label* mJoystick = NULL;
     Gtk::Window* mWindow = NULL;
+    Gtk::DrawingArea* mCanvas = NULL;
     Glib::RefPtr<Gtk::Application> app;
     Control mControl;
     const unsigned int mFps;
@@ -32,4 +35,5 @@ class GUI{
 
   protected:
     bool onTimeout();
+    bool onDraw(const Cairo::RefPtr<Cairo::Context>& cr);
 };
