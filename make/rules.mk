@@ -6,17 +6,20 @@ TARGET       := ${BIN}/${TARGET}
 
 DEPENDANCIES := $(wildcard ${BUILD}/*.o.d)
 
-.PHONY: all clean run
+.PHONY: all clean run doc
 
 all: ${TARGET}
+
+doc:
+	doxygen doc/Doxyfile
 
 run: ${TARGET}
 	@echo -e "Executing $<\n"
 	@./$<
 
 clean:
-	@echo "Cleaning [${BUILD} ${BIN}]"
-	@rm -rf ${BUILD} ${BIN}
+	@echo "Cleaning [${BUILD} ${BIN} ${DOC}]"
+	@rm -rf ${BUILD} ${BIN} ${DOC}/html
 
 ${BIN} ${BUILD}: %:
 	@echo "Creating Directory $@"
