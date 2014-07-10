@@ -1,67 +1,42 @@
+#pragma once
+
 #include <string>
-#include <iosfwd>
-
-#include <exception>
-
-#include <gtkmm/application.h>
-#include <gtkmm/window.h>
-#include <gtkmm/button.h>
-#include <gtkmm/hvbox.h>
-#include <gtkmm/hvscale.h>
-#include <gtkmm/textview.h>
-#include <gtkmm/drawingarea.h>
-#include <gtkmm/main.h>
+#include <cstdint>
 
 #include <gst/gst.h>
 
-class Exception : public std::exception{
-  private:
-  std::string msg;
+namespace Gtk{
+  class Widget;
+}
+
+class VideoStream{
   public:
-    template<typename T>
-    Exception& operator<<(const T& value);
-    Exception& operator<<(std::ostream& (*f)(std::ostream&));
-    virtual const char* what() const throw(){ return msg.c_str();}
-};
-   
-class GUI{
+    enum States{
+      play = GST_STATE_PLAYING,
+      pause = GST_STATE_PAUSED,
+      stop = GST_STATE_READY
+    };
   private:
-    int argc;
-    char** argv;
-    
-    GstElement*       pipeline;
-    GstBus*           msgBus;
-    GstState          pipelineState;
-    gint64            duration;
 
-    Glib::RefPtr<Gtk::Application> app;
-    Gtk::Window                    window;
-    Gtk::DrawingArea               canvas;
-    Gtk::HScale                    slider;
-    Gtk::TextView                  streamInfo;
-    Gtk::HBox                      toolbar, stream;
-    Gtk::VBox                      layout;
-    Gtk::Button                    play, pause, stop;
+    States      mState    = stop;
+    int64_t     mDuration = GST_CLOCK_TIME_NONE;
+    std::string mInfo;
+    GstElement* mPipeline;
 
-    sigc::connection  sliderConnection;
-
-
-    void onRealize();
-    void onPlay()  { gst_element_set_state (pipeline, GST_STATE_PLAYING); }
-    void onPause() { gst_element_set_state (pipeline, GST_STATE_PAUSED);  }
-    void onStop()  { gst_element_set_state (pipeline, GST_STATE_READY);   }
-    bool onDraw(const Cairo::RefPtr<Cairo::Context>& cr);
-    void onSeek();
-    bool onTimeout();
-    
-    static void onNotify     ( GstBus* bus, GstMessage* msg, GUI* gui );
-    static void onMetadata   ( GstBus* bus, GstMessage* msg, GUI* gui );
-    static void onStateChange( GstBus* bus, GstMessage* msg, GUI* gui );
-    static void onEndOfStream( GstBus* bus, GstMessage* msg, GUI* gui );
-    static void onError      ( GstBus* bus, GstMessage* msg, GUI* gui );
+    static void onMetadata   ( GstBus* bus, GstMessage* msg, VideoStream* stream );
+    static void onStateChange( GstBus* bus, GstMessage* msg, VideoStream* stream );
+    static void onEndOfStream( GstBus *bus, GstMessage *msg, VideoStream *stream ) { stream->state(stop); }
+    static void onError      ( GstBus* bus, GstMessage* msg, VideoStream* stream );
 
   public:
-    GUI(int argc, char** argv);
-    ~GUI();
-    void run() { app->run(window, argc, argv); }
+    VideoStream(int argc, char** argv);
+    ~VideoStream();
+    void widget(Gtk::Widget& widget);
+    void uri(const std::string& uri) { g_object_set(mPipeline, "uri", uri.c_str(), NULL); }
+    void state(States newState)      { gst_element_set_state (mPipeline, (GstState)newState); }
+    States state() const             { return mState; }
+    const std::string& info() const  { return mInfo; }
+    double duration() const;
+    double position() const;
+    void position(double newPos);
 };
