@@ -8,3 +8,6 @@ ifneq ($(findstring arm,${MACHINE}),)
 	ARCH ?= arm
 endif
 
+ifneq ($(findstring test,${MACHINE}),)
+	ARCH ?= test
+endif
