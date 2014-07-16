@@ -16,7 +16,7 @@ class JoystickError : public virtual boost::exception,
       EventError
     };
     using NumberInfo = boost::error_info< struct NumberInfoTag, int   >;
-    using SDLInfo    = boost::error_info< struct SDLInfoTag,    char* >;
+    using SDLInfo    = boost::error_info< struct SDLInfoTag,    const char* >;
   private:
     Cause mCause;
     JoystickError(Cause cause) throw() : mCause(cause){}
