@@ -11,7 +11,7 @@ std::vector<std::string> Joystick::getAvailableJoysticks(){
   std::vector<std::string> joys;
   for(int i=0;i<SDL_NumJoysticks();i++)
   {
-    const char* name=SDL_JoystickName(i);
+    const char* name=SDL_JoystickNameForIndex(i);
     if(!name)
       throw JoystickError::NoSuchJoystick() << JoystickError::NumberInfo(i)
                                             << throw_function(__PRETTY_FUNCTION__)
@@ -103,7 +103,7 @@ void Joystick::handleJoystick(){
 }
 
 std::string Joystick::name() const{
-  const char* name=SDL_JoystickName(mJoyNum);
+  const char* name=SDL_JoystickName(mJoyDev);
   if(!name)
     throw JoystickError::NoSuchJoystick() << JoystickError::NumberInfo(mJoyNum)
                                           << throw_function(__PRETTY_FUNCTION__)

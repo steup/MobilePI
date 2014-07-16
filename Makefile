@@ -9,7 +9,7 @@ INCLUDES       :=
 LIBS           := boost_system boost_program_options boost_filesystem
 LDPATHS        :=
 
-ARCH           ?= test
+#ARCH           ?= test
 
 include make/arch.mk
 include make/${ARCH}.mk
