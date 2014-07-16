@@ -12,7 +12,7 @@ include make/pkg-config.mk
 
 CXXFLAGS      += -march=native
 
-ARCH_OBJECTS  := test VideoStream VideoGUI
+OBJECTS  := test VideoStream VideoGUI
 
 TARGET        := test
 
