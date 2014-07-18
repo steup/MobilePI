@@ -37,16 +37,14 @@ int main(int argc, char** argv){
   signal(SIGTERM, stop);
   signal(SIGQUIT, stop);
   signal(SIGHUP, stop);
-  try{
-    GUI gui(argc, argv, "./glade/gui.glade");
-    guiPtr = &gui;
-    
+  options_description options;
+
+  try{   
     string progName=path(argv[0]).filename().native();
     path defaultConfigFile = current_path();
     defaultConfigFile/="cfg";
     defaultConfigFile/=progName+".cfg";
 
-    options_description options(progName);
     options.add_options()
       ("configFile", value<path>()->default_value(defaultConfigFile), "Path to configuration file")
       ("Log.file", value<string>(), "File to log errors or - for stdout")
@@ -54,6 +52,8 @@ int main(int argc, char** argv){
       ("Connection.port", value<uint16_t>(), "Port of host to control")
       ("Connection.timeout", value<unsigned long>(), "Timeout of periodic transmission in milliseconds")
       ("Joystick.id", value<unsigned int>(), "Id of joystick to use")
+      ("GUI.gladeFile", value<string>(), "Glade file describing used GUI elements")
+      ("GUI.updateRate", value<uint16_t>(), "Update rate of GUI in fps")
       ("listJoysticks", "List available joysticks by ID")
       ("help", "print this help");
 
@@ -77,6 +77,12 @@ int main(int argc, char** argv){
     store(parse_config_file(configFile, options), vm);
 
     Log errorLog(vm["Log.file"].as<string>());
+
+
+
+    GUI gui(vm["GUI.gladeFile"].as<string>(),
+            vm["GUI.updateRate"].as<uint16_t>());
+    guiPtr = &gui;
 
     Joystick   joystick  (vm["Joystick.id"]       .as<unsigned int>());
     CommSender connection(vm["Connection.host"]   .as<string>(),
@@ -104,12 +110,28 @@ int main(int argc, char** argv){
     joystick.addErrorHandler(errorHandler);
     connection.addErrorHandler(errorHandler);
 
-    return gui.run();
+    try{
+      return gui.run();
+    }
+    catch(const Glib::Exception& e){
+      errorLog << e.what() << std::endl;
+    }
+  }
+  catch(const boost::bad_any_cast& e){
+    cerr << endl;
+    cerr << "Invalid Command Line or Config file:" << endl;
+    cerr << "\t" << e.what() << endl;
+    cerr << endl << "Available options:" << endl << options << endl;
   }
   catch(const std::exception& e){
-    cerr << std::endl;
-    cerr << "Error during startup of program:" << std::endl;
-    cerr << "\t" << e.what() << std::endl;
+    cerr << endl;
+    cerr << "Error during startup of program:" << endl;
+    cerr << "\t" << e.what() << endl;
+  }
+  catch(const Glib::Exception& e){
+    cerr << endl;
+    cerr << "Error during startup of program:" << endl;
+    cerr << "\t" << e.what() << endl;
   }
 
   return -1;

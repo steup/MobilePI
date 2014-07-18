@@ -2,7 +2,6 @@
 
 #include <gtkmm/application.h>
 #include <gtkmm/builder.h>
-#include <giomm/applicationcommandline.h>
 #include <cairomm/context.h>
 #include <string>
 #include <utility>
@@ -29,12 +28,12 @@ class GUI{
     const unsigned int             mFps;
     
   public:
-    GUI( int& argc, char**& argv, const std::string& gladeFile, unsigned int fps=30 );
+    GUI( const std::string& gladeFile, unsigned int fps=30 );
     virtual ~GUI() { stop(); };
     GUI(const GUI&) = delete;
     GUI& operator=(const GUI&) = delete;
     void joystick( const std::string& name );
-    int run() { return mApp -> run( *mWindow ); }
+    int run() { int argc=0; char** argv=nullptr;return mApp -> run( *mWindow, argc, argv ); }
     void stop() { mApp -> quit(); }
     void value( const Control& ctrl) { mControl = ctrl; }
     unsigned int fps() const { return mFps; }
@@ -42,5 +41,4 @@ class GUI{
   protected:
     bool onTimeout();
     bool onDraw(const Cairo::RefPtr<Cairo::Context>& cr);
-    int onCmd(const Glib::RefPtr<Gio::ApplicationCommandLine>& cmd);
 };

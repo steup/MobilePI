@@ -18,11 +18,10 @@ class GUIException : public std::exception{
     virtual const char* what() const throw(){return msg.c_str();}
 };
 
-GUI::GUI(int& argc, char**& argv, const std::string& gladeFile, unsigned int fps)
-  : mApp(Gtk::Application::create(argc, argv, "", Gio::APPLICATION_HANDLES_COMMAND_LINE)),
+GUI::GUI(const std::string& gladeFile, unsigned int fps)
+  : mApp(Gtk::Application::create()),
     mBuilder(Gtk::Builder::create_from_file(gladeFile)),
     mFps(fps){
-  mApp->signal_command_line().connect(sigc::mem_fun(*this, &GUI::onCmd), false);
   mBuilder->get_widget("Window", mWindow);
   if(!mWindow)
     throw GUIException("Widget Window not found");
@@ -97,9 +96,4 @@ bool GUI::onDraw(const Cairo::RefPtr<Cairo::Context>& cr){
     cr->stroke();
   }
   return true;
-}
-
-int GUI::onCmd(const Glib::RefPtr<Gio::ApplicationCommandLine>& cmd){
-  mApp->activate();
-  return 0;
 }
