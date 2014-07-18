@@ -15,16 +15,18 @@ using std::endl;
 using std::chrono::milliseconds;
 
 CommBase::CommBase(unsigned short port, milliseconds timeout)
-  : mSocket(mIos, udp::endpoint(udp::v4(), port)),
+  : mRunning(true),
+    mSocket(mIos, udp::endpoint(udp::v4(), port)),
     mTimer(mIos),
     mIOThread([this](){runIOService();}),
-    mTimeout(timeout){
-}
+    mTimeout(timeout) 
+{}
 
 CommBase::CommBase(const std::string& host, unsigned short port, milliseconds timeout)
-  : mSocket(mIos, udp::endpoint(udp::v4(), 0)),
+  : mRunning(true),
+    mSocket(mIos, udp::endpoint(udp::v4(), 0)),
     mTimer(mIos),
-    mTimeout(timeout){
+    mTimeout(timeout) {
   udp::resolver r(mIos);
   stringstream ss;
   ss << port;
@@ -32,21 +34,27 @@ CommBase::CommBase(const std::string& host, unsigned short port, milliseconds ti
   mIOThread=std::thread([this](){runIOService();});
 }
 
-void CommBase::startReceive(const ReceiveBuffers& buffers){
+CommBase::~CommBase(){
+  mRunning=false;
+  mIos.stop();
+  mIOThread.join();
+}
+
+void CommBase::startReceive(const ReceiveBuffers& buffers) {
   auto func = [this](const error_code& ec, size_t bytes){
     handleEvent(ec, bytes);
   };
   mSocket.async_receive_from(buffers, mEndpoint, func);
 }
 
-void CommBase::startTransmit(const TransmitBuffers& buffers){
+void CommBase::startTransmit(const TransmitBuffers& buffers) {
   auto func = [this](const error_code& ec, size_t bytes){
     handleEvent(ec, bytes);
   };
   mSocket.async_send_to(buffers, mEndpoint, func);
 }
 
-void CommBase::startTimer(){
+void CommBase::startTimer() {
   auto func = [this](const ErrorCode& e){
     if(e!=error::operation_aborted){
       startTimer();
@@ -57,10 +65,9 @@ void CommBase::startTimer(){
   mTimer.async_wait(func);
 }
 
-void CommBase::runIOService() throw()
-{
+void CommBase::runIOService() throw() {
   io_service::work w(mIos);
-  while(true)
+  while(mRunning.load())
     try{
       mIos.run();
     }catch(std::exception& e){
@@ -68,18 +75,18 @@ void CommBase::runIOService() throw()
     }
 }
 
-milliseconds CommBase::timeout() const{
+milliseconds CommBase::timeout() const {
   return mTimeout;
 }
 
-std::string CommBase::host() const{
+std::string CommBase::host() const {
   return mEndpoint.address().to_string();
 }
 
-uint16_t CommBase::port() const{
+uint16_t CommBase::port() const {
   return mEndpoint.port();
 }
 
-std::ostream& operator<<(std::ostream& out, const CommBase& data){
+std::ostream& operator<<(std::ostream& out, const CommBase& data) {
   return out << data.host() << ":" << data.port() << " - " << data.timeout().count() << "ms";
 }
