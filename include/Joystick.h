@@ -8,7 +8,7 @@
 
 #include <boost/signals2/signal.hpp>
 
-#include <SDL/SDL.h>
+#include <SDL2/SDL.h>
 #include <limits>
 
 class Joystick {
