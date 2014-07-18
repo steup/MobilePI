@@ -1,45 +1,48 @@
 #pragma once
 
-#include <JoystickError.h>
-
 #include <vector>
 #include <string>
 #include <mutex>
 #include <thread>
 #include <atomic>
-#include <ostream>
 
 #include <boost/signals2/signal.hpp>
 
-#include <SDL2/SDL.h>
+#include <SDL/SDL.h>
 #include <limits>
 
-class Joystick{
+class Joystick {
   public:
-    struct State{
-      static const int16_t axisMin=std::numeric_limits<int16_t>::min();
-      static const int16_t axisMax=std::numeric_limits<int16_t>::max();
-      std::vector<int16_t> axes;
-      std::vector<bool> buttons;
+    struct State {
+      static const int16_t axisMin = std::numeric_limits< int16_t >::min();
+      static const int16_t axisMax = std::numeric_limits< int16_t >::max();
+      std::vector< int16_t > axes;
+      std::vector< bool > buttons;
     };
 
   private:
-    using Lock=std::lock_guard<std::mutex>;
+    using Lock = std::lock_guard< std::mutex >;
+    using EventCallback = boost::signals2::signal< void (const State&) >;
+    using ErrorCallback = boost::signals2::signal< void (const std::exception& e) >;
 
+    static unsigned int sInitCount;
     std::mutex mMutex;
     SDL_Joystick* mJoyDev;
     unsigned int mJoyNum;
-    boost::signals2::signal<void (const State&)> eventCallback;
-    boost::signals2::signal<void (std::exception& e)> errorCallback;
+    EventCallback eventCallback;
+    ErrorCallback errorCallback;
     State mState;
     std::thread mThread;
-    std::atomic<bool> mRunning;
+    std::atomic< bool > mRunning;
 
     void handleJoystick();
 
+    static void init();
+    static void uninit();
+
   public:
-    using EventHandlerType = boost::signals2::signal<void (const State&)>::slot_type;
-    using ErrorHandlerType = boost::signals2::signal<void (std::exception&)>::slot_type;
+    using EventHandlerType = EventCallback::slot_type;
+    using ErrorHandlerType = ErrorCallback::slot_type;
 
     static std::vector<std::string> getAvailableJoysticks();
     static unsigned int getNumJoysticks();
