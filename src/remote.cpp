@@ -3,9 +3,12 @@
 #include <Log.h>
 #include <GUI.h>
 
+#include <memory>
 #include <chrono>
 #include <iostream>
 #include <string>
+
+#include <signal.h>
 
 #include <boost/program_options/options_description.hpp>
 #include <boost/program_options/variables_map.hpp>
@@ -22,9 +25,22 @@ using namespace std::chrono;
 using namespace boost::program_options;
 using namespace boost::filesystem;
 
+GUI* guiPtr = nullptr;
+
+void stop(int sig){
+  if(guiPtr)
+    guiPtr->stop();
+}
+
 int main(int argc, char** argv){
-  GUI gui(argc, argv, "./glade/gui.glade");
+  signal(SIGINT, stop);
+  signal(SIGTERM, stop);
+  signal(SIGQUIT, stop);
+  signal(SIGHUP, stop);
   try{
+    GUI gui(argc, argv, "./glade/gui.glade");
+    guiPtr = &gui;
+    
     string progName=path(argv[0]).filename().native();
     path defaultConfigFile = current_path();
     defaultConfigFile/="cfg";
@@ -43,7 +59,7 @@ int main(int argc, char** argv){
 
     variables_map vm;
     store(parse_command_line(argc, argv, options), vm);
-    
+
     if(vm.count("listJoysticks")){
       cout << "Available Joysticks: " << endl;
       for(unsigned int i=0;i<Joystick::getNumJoysticks();i++)
@@ -77,10 +93,10 @@ int main(int argc, char** argv){
       int16_t speed=-(int32_t)state.axes[3]*parameters.maxSpeed/state.axisMax;
       int16_t angle=(int32_t)state.axes[0]*parameters.maxAngle/state.axisMax;
       connection.setMoveData({speed, angle});
-      gui.value(GUI::Control((float)speed/parameters.maxSpeed, (float)angle/parameters.maxAngle));
+      gui.value({(float)speed/parameters.maxSpeed, (float)angle/parameters.maxAngle});
     };
 
-    auto errorHandler = [&](std::exception& e)throw(){
+    auto errorHandler = [&](const std::exception& e)throw(){
       errorLog << e.what() << std::endl;
     };
 
@@ -90,11 +106,11 @@ int main(int argc, char** argv){
 
     return gui.run();
   }
-  catch(std::exception& e){
+  catch(const std::exception& e){
     cerr << std::endl;
     cerr << "Error during startup of program:" << std::endl;
     cerr << "\t" << e.what() << std::endl;
   }
 
-  return 0;
+  return -1;
 }

@@ -1,7 +1,7 @@
 LD_PRE       += $(foreach flag, ${LDFLAGS}, -Wl,${flag})
 LD_POST      += $(addprefix -L, ${LDPATHS}) $(addprefix -l, ${LIBS})
-CXXFLAGS     += $(addprefix -I, ${INCLUDES})
-OBJECTS      := $(addprefix ${BUILD}/,$(addsuffix .o, ${ARCH_OBJECTS} ${COMMON_OBJECTS}))
+CXXFLAGS     += $(addprefix -I, ${INCLUDE} ${INCLUDES})
+OBJECTS      := $(addprefix ${BUILD}/,$(addsuffix .o, ${OBJECTS}))
 TARGET       := ${BIN}/${TARGET}
 
 DEPENDANCIES := $(wildcard ${BUILD}/*.o.d)

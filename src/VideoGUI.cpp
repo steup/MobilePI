@@ -38,7 +38,7 @@ T& VideoGUI::loadWidget(const std::string& name){
    
 VideoGUI::VideoGUI(int argc, char** argv, const string& gladeFile)
   : stream(argc, argv),
-    app(Gtk::Application::create(argc, argv, "GStreamer GTKmm Test")),
+    app(Gtk::Application::create(argc, argv)),
     builder(Gtk::Builder::create_from_file(gladeFile)),
     window(loadWidget<Gtk::Window>("Window")),
     canvas(loadWidget<Gtk::DrawingArea>("Video")),

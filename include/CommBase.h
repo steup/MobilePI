@@ -2,6 +2,7 @@
 #include <CommError.h>
 
 #include <thread>
+#include <atomic>
 #include <chrono>
 #include <vector>
 
@@ -25,6 +26,7 @@ class CommBase{
     using TransmitBuffers = std::vector<boost::asio::const_buffer>;
 
   private:
+    std::atomic<bool> mRunning;
     boost::signals2::signal<void(std::exception& e) throw()> errorCallback;
     boost::asio::io_service mIos;
     boost::asio::ip::udp::socket mSocket;
@@ -54,6 +56,9 @@ class CommBase{
 
     /* \brief Receiver constructor*/
     CommBase(unsigned short port, std::chrono::milliseconds timeout);
+
+    /* \brief Destructor killing the IO-Thread*/
+    virtual ~CommBase();
 
     /* \brief add an error handler
      * \param handler the error handler

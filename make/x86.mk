@@ -12,6 +12,6 @@ include make/pkg-config.mk
 
 CXXFLAGS      += -march=native
 
-ARCH_OBJECTS  := remote Joystick CommSender GUI VideoStream
+OBJECTS  := remote Joystick JoystickError CommSender CommBase GUI
 
 TARGET        := remote
