@@ -21,10 +21,9 @@ class Log : public boost::filesystem::ofstream{
     Log(const Log&) = delete;
     Log& operator=(const Log&) = delete;
 
-    Log(const boost::filesystem::path& fileName) : 
-      boost::filesystem::ofstream(fileName, std::ios_base::app),
-      mFileName(fileName)
-    {
+    Log(const boost::filesystem::path& fileName) : mFileName(fileName) {
+      boost::filesystem::create_directory(fileName.parent_path());
+      open(fileName, std::ios_base::app);
       date() << "Opening Log: " << mFileName.native() << std::endl;
     }
 
