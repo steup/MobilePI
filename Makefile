@@ -5,6 +5,7 @@ INCLUDE        := ./include
 BUILD          := ./build
 SRC            := ./src
 BIN            := ./bin
+DOC            := ./doc
 INCLUDES       := 
 LIBS           := boost_system boost_program_options boost_filesystem
 LDPATHS        :=
