@@ -1,65 +1,60 @@
 #include <GUI.h>
+#include <Exception.h>
 
 #include <gtkmm/label.h>
 #include <gtkmm/window.h>
 #include <glibmm/main.h>
 #include <gtkmm/drawingarea.h>
 
-#include <sstream>
-#include <exception>
 #include <iomanip>
+#include <iostream>
 #include <cmath>
 
-class GUIException : public std::exception{
-  private:
-    const std::string msg;
-  public:
-    GUIException(const std::string& msg) throw() : msg(msg) {}
-    virtual const char* what() const throw(){return msg.c_str();}
-};
+namespace {
+  template<typename T>
+  T& loadWidget(Glib::RefPtr<Gtk::Builder> builder, const std::string& name){
+    T* widgetPtr = nullptr;
+    builder->get_widget(name, widgetPtr);
+    if(widgetPtr)
+      return *widgetPtr;
+    else
+      throw Exception() << __PRETTY_FUNCTION__ << ": " << __LINE__ << " - Unable to find widget " << name << "!" << std::endl;
+  }
+}
 
 GUI::GUI(int& argc, char**& argv, const std::string& gladeFile, unsigned int fps)
-  : mApp(Gtk::Application::create(argc, argv, "", Gio::APPLICATION_HANDLES_COMMAND_LINE)),
+  : mStream(mArgCount, argv),
+    mApp(Gtk::Application::create(mArgCount, argv)),
     mBuilder(Gtk::Builder::create_from_file(gladeFile)),
-    mFps(fps){
-  mApp->signal_command_line().connect(sigc::mem_fun(*this, &GUI::onCmd), false);
-  mBuilder->get_widget("Window", mWindow);
-  if(!mWindow)
-    throw GUIException("Widget Window not found");
-  mBuilder->get_widget("V", mVLabel);
-  if(!mVLabel)
-    throw GUIException("Widget V not found");
-  mBuilder->get_widget("Theta", mThetaLabel);
-  if(!mThetaLabel)
-    throw GUIException("Widget Theta not found");
-  mBuilder->get_widget("Joystick", mJoystick);
-  if(!mJoystick)
-    throw GUIException("Widget Joystick not found");
-  mBuilder->get_widget("Canvas", mCanvas);
-  if(!mCanvas)
-    throw GUIException("Widget Canvas not found");
+    mWindow(loadWidget<Gtk::Window>(mBuilder, "Window")),
+    mCanvas(loadWidget<Gtk::DrawingArea>(mBuilder, "Canvas")),
+    mVLabel(loadWidget<Gtk::Label>(mBuilder, "V")),
+    mThetaLabel(loadWidget<Gtk::Label>(mBuilder, "Theta")),
+    mJoystick(loadWidget<Gtk::Label>(mBuilder, "Joystick")),
+    mFps(fps) {
   Glib::signal_timeout().connect(sigc::mem_fun(*this, &GUI::onTimeout), 1000/mFps);
-  mCanvas->signal_draw().connect(sigc::mem_fun(*this, &GUI::onDraw), false);
-  mWindow->show_all();
+  mCanvas.signal_draw().connect(sigc::mem_fun(*this, &GUI::onDraw), false);
+  mCanvas.signal_realize().connect(sigc::mem_fun(*this, &GUI::onRealize));
+  mWindow.show_all();
 }
 
 void GUI::joystick( const std::string& name ) {
-  mJoystick -> set_text( name );
+  mJoystick.set_text( name );
 }
 
 bool GUI::onTimeout(){
   std::ostringstream vOut;
   vOut << std::setprecision(2) << mControl.first;
-  mVLabel->set_text(vOut.str());
+  mVLabel.set_text(vOut.str());
   std::ostringstream thetaOut;
   thetaOut << std::setprecision(2) << mControl.second;
-  mThetaLabel->set_text(thetaOut.str());
-  mCanvas->queue_draw();
+  mThetaLabel.set_text(thetaOut.str());
+  mCanvas.queue_draw();
   return true;
 }
 
 bool GUI::onDraw(const Cairo::RefPtr<Cairo::Context>& cr){
-  Gtk::Allocation allocation = mCanvas->get_allocation();
+  Gtk::Allocation allocation = mCanvas.get_allocation();
   const int width = allocation.get_width();
   const int height = allocation.get_height();
 
@@ -69,10 +64,12 @@ bool GUI::onDraw(const Cairo::RefPtr<Cairo::Context>& cr){
   cr->rotate(M_PI);
   cr->save();
   // Clear the window with black background
-  cr->set_source_rgba(0.0, 0.0, 0.0, 1.0);
-  cr->paint();
-  cr->clip();
-  cr->restore();
+  if(mStream.state() != VideoStream::play) {
+    cr->set_source_rgba(0.0, 0.0, 0.0, 1.0);
+    cr->paint();
+    cr->clip();
+    cr->restore();
+  }
   // Set drawing color to white
   cr->set_source_rgba(1.0, 1.0, 1.0, 1.0);
   cr->save();
@@ -96,10 +93,11 @@ bool GUI::onDraw(const Cairo::RefPtr<Cairo::Context>& cr){
     cr->rel_line_to(0.25, -0.25);
     cr->stroke();
   }
-  return true;
+  return false;
 }
 
-int GUI::onCmd(const Glib::RefPtr<Gio::ApplicationCommandLine>& cmd){
-  mApp->activate();
-  return 0;
+void GUI::onRealize() {
+  mStream.widget(mCanvas);
+  mStream.uri("file:///home/ssj5kc/Person-of-Interest_2_1.mp4");
+  mStream.state(VideoStream::play);
 }
