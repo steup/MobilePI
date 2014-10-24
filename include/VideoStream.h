@@ -20,23 +20,22 @@ class VideoStream{
 
     States      mState    = stop;
     int64_t     mDuration = GST_CLOCK_TIME_NONE;
-    std::string mInfo;
-    GstElement* mPipeline;
+    GstElement* mPipeline = nullptr;
+    GstElement* mSink     = nullptr;
+    GstElement* mSource   = nullptr;
+    std::string mInfo     = "nothing yet";
+    Gtk::Widget& mTarget;
 
-    static void onMetadata   ( GstBus* bus, GstMessage* msg, VideoStream* stream );
-    static void onStateChange( GstBus* bus, GstMessage* msg, VideoStream* stream );
-    static void onEndOfStream( GstBus *bus, GstMessage *msg, VideoStream *stream ) { stream->state(stop); }
-    static void onError      ( GstBus* bus, GstMessage* msg, VideoStream* stream );
+    static void onStateChange( GstBus*     bus, GstMessage* msg, VideoStream* stream );
+    static void onEndOfStream( GstBus*     bus, GstMessage *msg, VideoStream *stream ) { stream->state(stop); }
+    static void onError      ( GstBus*     bus, GstMessage* msg, VideoStream* stream );
+    static void onPadCreation( GstElement* bus, GstPad*     msg, VideoStream* stream );
+    static GstBusSyncReply onPreparation( GstBus*     bus, GstMessage* msg, VideoStream* stream );
 
   public:
-    VideoStream(int argc, char** argv);
+    VideoStream(int argc, char** argv, Gtk::Widget& widget);
     ~VideoStream();
-    void widget(Gtk::Widget& widget);
-    void uri(const std::string& uri) { g_object_set(mPipeline, "uri", uri.c_str(), NULL); }
-    void state(States newState)      { gst_element_set_state (mPipeline, (GstState)newState); }
+    void state(States newState);
+    const std::string& info() const  { return mInfo;  }
     States state() const             { return mState; }
-    const std::string& info() const  { return mInfo; }
-    double duration() const;
-    double position() const;
-    void position(double newPos);
 };

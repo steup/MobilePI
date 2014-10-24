@@ -7,27 +7,51 @@
 #include <gtkmm/widget.h>
 #include <gdk/gdkx.h>
 #include <gst/video/videooverlay.h>
+#include <iostream>
 
 using namespace std;
 
-VideoStream::VideoStream(int argc, char** argv){
+static const char* sourceType   = "videotestsrc";
+static const char* sinkType     = "xvimagesink";
+
+VideoStream::VideoStream(int argc, char** argv, Gtk::Widget& widget) : mTarget(widget) {
   
-  gst_init (&argc, &argv);
+  char* arg=new char[128];
+  strcpy(arg, "--debug_level=9");
+  char** myArgv = new char*[2];
+  myArgv[0] = argv[0];
+  myArgv[1] = arg;
+  int myArgc=1;
 
-  mPipeline = gst_element_factory_make("playbin", "playbin");
+  gst_init (&myArgc, &myArgv);
+  delete[] arg;
+  delete[] myArgv;
 
-  if(!mPipeline)
-    throw Exception() << __PRETTY_FUNCTION__ << ": Could not create playbin mPipeline" << endl;
+  mSource = gst_element_factory_make (sourceType, "source");
+  if(!mSource)
+    throw Exception() << __PRETTY_FUNCTION__ << ": Pipeline source " << sourceType << " could not be created";
+
+  mSink = gst_element_factory_make (sinkType, "sink");
+  if(!mSink)
+    throw Exception() << __PRETTY_FUNCTION__ << ": Pipeline sink " << sinkType << " could not be created";
+  
+  g_object_set( G_OBJECT(mSink), "autopaint-colorkey", FALSE, NULL);
+
+  mPipeline = gst_pipeline_new ("pipeline");
+    
+  if (!mPipeline)
+    throw Exception() << __PRETTY_FUNCTION__ << ": Pipeline  could not be created";
    
-  g_signal_connect( G_OBJECT( mPipeline ), "video-tags-changed", (GCallback)&onMetadata, this);
-  g_signal_connect( G_OBJECT( mPipeline ), "audio-tags-changed", (GCallback)&onMetadata, this);
-  g_signal_connect( G_OBJECT( mPipeline ), "text-tags-changed" , (GCallback)&onMetadata, this);
-   
+  gst_bin_add_many (GST_BIN (mPipeline), mSource, mSink, NULL);
+  if (gst_element_link( mSource, mSink ) == false )
+    throw Exception() << __PRETTY_FUNCTION__ << ": Cannot link source and decoder";
+
   GstBus* bus = gst_element_get_bus( mPipeline );
   gst_bus_add_signal_watch( bus );
   g_signal_connect( G_OBJECT( bus ), "message::error"        , (GCallback)&onError      , this );
   g_signal_connect( G_OBJECT( bus ), "message::eos"          , (GCallback)&onEndOfStream, this );
   g_signal_connect( G_OBJECT( bus ), "message::state-changed", (GCallback)&onStateChange, this );
+  gst_bus_set_sync_handler( bus, (GstBusSyncHandler)&onPreparation, this, NULL);
   gst_object_unref( bus );
 }
 
@@ -36,37 +60,22 @@ VideoStream::~VideoStream(){
   gst_object_unref (mPipeline);
 }
 
-void VideoStream::widget(Gtk::Widget& widget) {
-  auto nativeWindow = widget.get_window();
+GstBusSyncReply VideoStream::onPreparation(GstBus* bus, GstMessage* msg, VideoStream* stream) {
+  if (!gst_is_video_overlay_prepare_window_handle_message (msg))
+   return GST_BUS_PASS;
+   
+   auto nativeWindow = stream->mTarget.get_window();
    
   if (!nativeWindow->ensure_native())
-    throw Exception() << __PRETTY_FUNCTION__ << ": Window " << &widget << " not native. Cannot draw video to it!" << endl;
+    throw Exception() << __PRETTY_FUNCTION__ << ": Window " << &stream->mTarget << " not native. Cannot draw video to it!" << endl;
    
-  gst_video_overlay_set_window_handle(GST_VIDEO_OVERLAY (mPipeline), GDK_WINDOW_XID(nativeWindow->gobj()));
-}
-
-double VideoStream::duration() const{
-  int64_t value;
-  if (gst_element_query_duration (mPipeline, GST_FORMAT_TIME, &value))
-    return (double)value / GST_SECOND;
-  else
-    return -1;
-}
-   
-void VideoStream::position(double newPos) {
-  gst_element_seek_simple( mPipeline,
-                           GST_FORMAT_TIME,
-                           (GstSeekFlags)(GST_SEEK_FLAG_FLUSH | GST_SEEK_FLAG_KEY_UNIT),
-                           (int64_t)(newPos * GST_SECOND)
-  );
-}
-
-double VideoStream::position() const {
-  int64_t value;
-  if(gst_element_query_position(mPipeline, GST_FORMAT_TIME, &value))
-    return (double)value / GST_SECOND;
-  else
-    return 0;
+  gst_video_overlay_set_window_handle(GST_VIDEO_OVERLAY (stream->mSink), GDK_WINDOW_XID(nativeWindow->gobj()));
+  /** \bug the window is not drawn, without the call to get_geometry, might be a X window, GDK bug or a race condition*/
+  int x,y,w,h;
+  nativeWindow->get_geometry(x,y,w,h);
+  /*gst_video_overlay_set_render_rectangle(GST_VIDEO_OVERLAY (mSink), x, y, w, h);
+  cout << "(x,y,w,h) = (" << x << ", " << y << ", " << ", " << w << ", " << h << ")" << endl;*/
+  return GST_BUS_DROP;
 }
 
 void VideoStream::onError (GstBus *bus, GstMessage *msg, VideoStream *stream) {
@@ -90,65 +99,7 @@ void VideoStream::onStateChange(GstBus *bus, GstMessage *msg, VideoStream *strea
   if (GST_MESSAGE_SRC (msg) == GST_OBJECT (stream->mPipeline))
     stream->mState = (States)newS;
 }
-   
-void VideoStream::onMetadata(GstBus *bus, GstMessage *msg, VideoStream *stream) {
-  ostringstream o;
-  gint n_video, n_audio, n_text;
-      
-  g_object_get (stream->mPipeline, "n-video", &n_video, NULL);
-  g_object_get (stream->mPipeline, "n-audio", &n_audio, NULL);
-  g_object_get (stream->mPipeline, "n-text", &n_text, NULL);
-   
-  for (int i = 0; i < n_video; i++) {
-    GstTagList *tags = NULL;
-    g_signal_emit_by_name (stream->mPipeline, "get-video-tags", i, &tags);
-    if (tags) {
-      gchar *str = NULL;
 
-      gst_tag_list_get_string (tags, GST_TAG_VIDEO_CODEC, &str);
-      o << "video stream " << i << ":" << endl;
-      o << "  codec: " << (str ? str : "unknown") << endl;
-      g_free (str);
-      gst_tag_list_free (tags);
-    }
-  }
-   
-  for (int i = 0; i < n_audio; i++) {
-    GstTagList *tags = NULL;
-    g_signal_emit_by_name (stream->mPipeline, "get-audio-tags", i, &tags);
-    if (tags) {
-      char* str = NULL;
-      unsigned int rate = 0;
-
-      o << endl << "audio stream " << i << ":" << endl;
-      
-      if (gst_tag_list_get_string (tags, GST_TAG_AUDIO_CODEC, &str)) {
-        o << "  codec: " << str << endl;
-        g_free (str);
-      }
-      if (gst_tag_list_get_string (tags, GST_TAG_LANGUAGE_CODE, &str)) {
-        o << "  language: " << str << endl;
-        g_free (str);
-      }
-      if (gst_tag_list_get_uint (tags, GST_TAG_BITRATE, &rate)) {
-        o << "  bitrate: " << rate << endl;
-      }
-      gst_tag_list_free (tags);
-    }
-  }
-   
-  for (int i = 0; i < n_text; i++) {
-    GstTagList *tags = NULL;
-    g_signal_emit_by_name (stream->mPipeline, "get-text-tags", i, &tags);
-    if (tags) {
-      char* str = NULL;
-      o << endl << "subtitle stream " << i << ":" << endl;
-      if (gst_tag_list_get_string (tags, GST_TAG_LANGUAGE_CODE, &str)) {
-        o << "  language: " << str << endl;
-        g_free (str);
-      }
-      gst_tag_list_free (tags);
-    }
-  }
-  stream->mInfo = o.str();
+void VideoStream::state(VideoStream::States newState) {
+  gst_element_set_state (mPipeline, (GstState)newState);
 }

@@ -58,7 +58,6 @@ Joystick::Joystick( unsigned int joyNum ) :
   mThread=std::thread( [this](){ handleJoystick(); } );
   mState.axes.resize( SDL_JoystickNumAxes( mJoyDev ) );
   mState.buttons.resize( SDL_JoystickNumButtons( mJoyDev ) );
-  SDL_JoystickEventState( SDL_ENABLE );
 }
 
 Joystick::~Joystick(){

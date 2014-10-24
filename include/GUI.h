@@ -13,6 +13,7 @@ namespace Gtk{
   class Window;
   class DrawingArea;
   class Label;
+  class TextView;
 }
 
 class GUI{
@@ -21,15 +22,16 @@ class GUI{
 
   private:
     int                            mArgCount = 1;
-    VideoStream                    mStream;
     Glib::RefPtr<Gtk::Application> mApp;
     Glib::RefPtr<Gtk::Builder>     mBuilder;
     Gtk::Window&                   mWindow;
     Gtk::DrawingArea&              mCanvas;
-    Gtk::Label&                    mVLabel;
-    Gtk::Label&                    mThetaLabel;
+    Gtk::Label&                    mV;
+    Gtk::Label&                    mTheta;
     Gtk::Label&                    mJoystick;
+    Gtk::TextView&                 mInfo;
     Control                        mControl;
+    VideoStream                    mStream;
     const unsigned int             mFps;
     
   public:
@@ -38,7 +40,7 @@ class GUI{
     GUI(const GUI&) = delete;
     GUI& operator=(const GUI&) = delete;
     void joystick( const std::string& name );
-    int run() { return mApp->run( mWindow ); }
+    int run() { mStream.state(VideoStream::play); return mApp->run( mWindow ); }
     void stop() { mApp->quit(); }
     void value( const Control& ctrl) { mControl = ctrl; }
     unsigned int fps() const { return mFps; }
@@ -47,5 +49,4 @@ class GUI{
     bool onTimeout();
     bool onDraw(const Cairo::RefPtr<Cairo::Context>& cr);
     int onCmd(const Glib::RefPtr<Gio::ApplicationCommandLine>& cmd);
-    void onRealize();
 };
