@@ -4,7 +4,7 @@ ifneq ($(findstring x86,${MACHINE}),)
 	ARCH ?= x86
 endif
 
-ifneq ($(findstring armv7a,${MACHINE}),)
+ifneq ($(findstring armv7,${MACHINE}),)
 	ARCH ?= rpi2
 endif
 
