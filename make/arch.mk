@@ -4,8 +4,12 @@ ifneq ($(findstring x86,${MACHINE}),)
 	ARCH ?= x86
 endif
 
-ifneq ($(findstring arm,${MACHINE}),)
-	ARCH ?= arm
+ifneq ($(findstring armv7a,${MACHINE}),)
+	ARCH ?= rpi2
+endif
+
+ifneq ($(findstring armv6,${MACHINE}),)
+	ARCH ?= rpi
 endif
 
 ifneq ($(findstring test,${MACHINE}),)
