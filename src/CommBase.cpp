@@ -10,7 +10,6 @@ using boost::system::error_code;
 using boost::system::system_error;
 using boost::asio::ip::udp;
 using std::stringstream;
-using std::cerr;
 using std::endl;
 using std::chrono::milliseconds;
 
