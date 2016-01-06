@@ -1,0 +1,14 @@
+#pragma once
+
+#include <stdint.h>
+
+namespace platform {
+namespace crumb {
+
+// LedPortmap
+portmap StatusLed for at90can128
+{
+	pin led: b 7;
+	property onLevel = false;
+};
+}} 
