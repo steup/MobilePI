@@ -1,0 +1,4 @@
+[submodule "src/avr/avr-halib"]
+	path = src/avr/avr-halib
+	url = git@github.com:steup/avr-halib
+	branch = newInterruptSystem
