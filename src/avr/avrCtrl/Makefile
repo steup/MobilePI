@@ -6,7 +6,8 @@ CFLAGS           += -Wall -Os -g
 CXXFLAGS         += -Wall -Os -g
 CXXFLAGS         += -fno-keep-inline-functions -fshort-enums -ffunction-sections
 #CXXFLAGS         += -DLOGGING_DISABLE
-LDFLAGS          += -Os -nodevicelib
+LDFLAGS          += -Os
+#LDFLAGS          +=	-nodevicelib
 
 PLATFORM         := platform/mobilePi
 
