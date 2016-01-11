@@ -1,0 +1,13 @@
+namespace platform {
+namespace mobilePi {
+
+portmap Motor for at90can128
+{
+	pin dir  : a 2;
+  pin reset: a 0;
+  pin ff1  : e 7;
+  pin ff2  : e 5;
+	property onLevel = true;
+};
+
+}}
