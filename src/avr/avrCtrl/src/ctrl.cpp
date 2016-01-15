@@ -89,45 +89,125 @@ void speed(Speed speed) {
 using avr_halib::regmaps::local::Spi;
 using avr_halib::common::Delegate;
 
+uint8_t buffer[13];
 
-class Protocol {
+template<uint8_t n>
+class RegisterAccessProtocol {
+
+  struct Register {
+    uint8_t len;
+    enum Access {
+      writeOnly,
+      readOnly,
+      both
+    } access : 2;
+    uint8_t* ptr;
+  } registers[n];
+
   enum State {
-    idle,
+    read,
     write,
-    read
+    idle,
+    cmd,
+    retRead,
+    retWrite
   } mState;
+
   enum Return {
     ok,
+    aborted,
     invalidReg,
     invalidOp,
+    invalidLen,
     invalidParam
   } mReturn;
-  uint8_t mRxBuffer[129];
-  uint8_t mTxBuffer[129];
-  uint8_t mRxPtr;
-  uint8_t mTxPtr;
 
-  Delegate<uint8_t> transmitFunc;
+  uint8_t mReg;
+  uint8_t mBC;
+  int8_t  mLen;
+  union Command {
+    struct {
+      uint8_t reg  : 7;
+      bool    write: 1;
+    };
+    uint8_t data;
+    Command(uint8_t byte) : data(byte) {}
+  };
+
+  
 
   public:
-    Protocol() : mState(idle), mReturn(ok), mRxPtr(0), mTxPtr(0) {}
+  Delegate<uint8_t> transmitFunc;
+    RegisterAccessProtocol() : mState(idle), mReturn(ok) {
+      registers[0].len    = 1;
+      registers[0].access = Register::readOnly;
+      registers[0].ptr    = (uint8_t*)&mReturn;
+      registers[1].len    =12;
+      registers[1].access = Register::both;
+      registers[1].ptr    = buffer;
+    }
 
     void startFrame() {
-      mState  = idle;
-      mRxPtr  =    0;
-      mTxPtr  =    0;
-      mReturn =   ok;
+      mState  = cmd;
+      mLen = 0;
+      mReturn = ok;
+      mBC = 0;
     }
 
     void endFrame() {
-      mRxBuffer[mRxPtr] = '\0';
-      log::emit() << "Got SPI Packet: " << (char*)mRxBuffer << log::endl;
+      switch(mState) {
+        case(cmd):      log::emit() << "SPI request terminated by master!" << " bc: " << (uint16_t)mBC << log::endl; mReturn = aborted; break;
+        case(write):
+        case(retWrite): log::emit() << "SPI write request aborted by master!" <<  " bc: " << (uint16_t)mBC <<log::endl; mReturn = aborted; break;
+        case(read):
+        case(retRead):  log::emit() << "SPI read  request aborted by master!" <<  " bc: " << (uint16_t)mBC <<log::endl; mReturn = aborted; break;
+        case(idle):     if(mReturn == ok)
+                          log::emit() << "SPI request completed!" << log::endl;
+                        else
+                          log::emit() << "SPI request failed: " << (uint16_t)mReturn << " reg: " << (uint16_t)mReg << " len: " << (uint16_t)mLen << " bc: " << (uint16_t)mBC << log::endl;
+      }
+      mState = idle;
+      log::emit() << "Buffer: " << (char*)buffer << log::endl;
     }
     
     void handleRxByte(uint8_t byte) {
-      mRxBuffer[mRxPtr++]=byte;
-      mRxPtr%=(sizeof(mRxBuffer)-1);
-    }
+      mBC++;
+      switch(mState) {
+        case(cmd): {
+          mReturn = ok;
+          Command cmd(byte);
+          mReg = cmd.reg;
+          mState = cmd.write?retWrite:retRead;
+          if(mReg>n || registers[mReg].len == 0) {
+            mReturn = invalidReg;
+            mState = idle;
+          }
+          if((registers[mReg].access== Register::writeOnly && !cmd.write) || (registers[mReg].access == Register::readOnly && cmd.write)) {
+            mReturn = invalidOp;
+            mState = idle;
+          }
+          transmitFunc(mReturn);
+          break;
+        }
+        case(retWrite):
+          mState = write;
+        case(write):
+          if(mLen<registers[mReg].len)
+            registers[mReg].ptr[mLen]=byte;
+          if(mLen++==registers[mReg].len-1)
+            mState = idle;
+          break;
+        case(retRead):
+          mState = read;
+        case(read):
+          if(mLen<registers[mReg].len)
+            transmitFunc(registers[mReg].ptr[mLen]);
+          if(mLen++==registers[mReg].len)
+            mState = idle;
+          break;
+       default: if(mReturn == ok) mReturn = invalidLen;
+     }
+   }
 };
 
 
@@ -146,6 +226,12 @@ class SpiSlave : public Proto,
 
     static SpiSlave* sInstance;
     
+    void transmit(uint8_t byte) {
+      UseRegMap(rm, Spi);
+      SyncRegMap(rm);
+      rm.spdr = byte;
+    }
+
     SpiSlave() : Protocol() {
       
       UseRegMap(rm, Spi);
@@ -155,11 +241,13 @@ class SpiSlave : public Proto,
       rm.mstr = false;
       rm.cpol = false;
       rm.cpha = false;
+      rm.miso.ddr = true;
       SyncRegMap(rm);
 
       this->setPullUp(true);
       this->FrameInt::enable();
       sInstance = this;
+      this->transmitFunc.template bind<SpiSlave, &SpiSlave::transmit>(this);
     }
 
     void handleOp() {
@@ -189,7 +277,7 @@ SpiSlave<P, I, R>* SpiSlave<P, I, R>::sInstance = NULL;
 
 typedef avr_halib::regmaps::local::ExternalInterrupt6 SpiFrameInt;
 
-typedef SpiSlave<Protocol, Spi, SpiFrameInt> Comm;
+typedef SpiSlave<RegisterAccessProtocol<2>, Spi, SpiFrameInt> Comm;
 
 typedef InterruptManager< Comm::InterruptSlotList > IM;
 
