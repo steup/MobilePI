@@ -1,6 +1,8 @@
 #pragma once
 
 #include "config.h"
+#include <crumb_portmap.h>
+#include <motor_portmap.h>
 
 namespace platform
 {

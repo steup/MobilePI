@@ -6,7 +6,6 @@
 #include <avr-halib/common/sleep.h>
 #include <boost/mpl/list.hpp>
 
-#include <crumb_portmap.h>
 
 namespace platform
 {
